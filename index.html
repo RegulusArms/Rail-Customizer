@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rail Cover Customizer</title>
+<style>
+  :root{
+    --panel-bg:#ffffff;
+    --panel-border:#e2e2e7;
+    --accent:#3b82f6;
+    --text:#1f2430;
+    --muted:#6b7280;
+    --bg:#f4f5f7;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;
+    height:100%;
+    background:var(--bg);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--text);
+  }
+  .app{
+    display:flex;
+    min-height:100vh;
+    align-items:stretch;
+  }
+  .panel{
+    width:300px;
+    flex:0 0 300px;
+    background:var(--panel-bg);
+    border-right:1px solid var(--panel-border);
+    padding:20px 18px;
+    overflow-y:auto;
+  }
+  .panel h1{
+    font-size:17px;
+    margin:0 0 4px;
+  }
+  .panel .sub{
+    font-size:12.5px;
+    color:var(--muted);
+    margin:0 0 20px;
+  }
+  .field{
+    margin-bottom:18px;
+  }
+  .field label{
+    display:block;
+    font-size:12.5px;
+    font-weight:600;
+    margin-bottom:6px;
+    color:var(--text);
+  }
+  .field .row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .field .row span.val{
+    font-size:12px;
+    color:var(--muted);
+    width:44px;
+    text-align:right;
+    flex:0 0 auto;
+  }
+  input[type="range"]{
+    flex:1 1 auto;
+    accent-color:var(--accent);
+  }
+  input[type="file"]{
+    font-size:12.5px;
+    width:100%;
+  }
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    border:1px solid var(--panel-border);
+    background:#fff;
+    color:var(--text);
+    padding:8px 12px;
+    font-size:13px;
+    border-radius:8px;
+    cursor:pointer;
+    transition:background .12s ease;
+  }
+  .btn:hover{background:#f2f3f5;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .btn-row{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .btn-primary{
+    background:var(--accent);
+    color:#fff;
+    border-color:var(--accent);
+    width:100%;
+    padding:11px 12px;
+    font-size:14px;
+    font-weight:600;
+  }
+  .btn-primary:hover{background:#2f6fdb;}
+  .btn-primary + .btn-primary{
+    margin-top:8px;
+  }
+  .checkbox-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:13px;
+  }
+  hr.sep{
+    border:none;
+    border-top:1px solid var(--panel-border);
+    margin:18px 0;
+  }
+  .layer-list{
+    list-style:none;
+    margin:0;
+    padding:0;
+    border:1px solid var(--panel-border);
+    border-radius:8px;
+    overflow:hidden;
+  }
+  .layer-item{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    padding:7px 8px;
+    font-size:12.5px;
+    background:#fff;
+    border-bottom:1px solid var(--panel-border);
+    cursor:pointer;
+    user-select:none;
+  }
+  .layer-item:last-child{border-bottom:none;}
+  .layer-item.active{
+    background:#eaf1fe;
+    outline:1px solid var(--accent);
+    outline-offset:-1px;
+  }
+  .layer-item.dragging{opacity:.4;}
+  .layer-drag-handle{
+    cursor:grab;
+    color:var(--muted);
+    font-size:14px;
+    line-height:1;
+    flex:0 0 auto;
+  }
+  .layer-name{
+    flex:1 1 auto;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .layer-remove{
+    flex:0 0 auto;
+    border:none;
+    background:transparent;
+    color:var(--muted);
+    font-size:15px;
+    line-height:1;
+    cursor:pointer;
+    padding:2px 5px;
+    border-radius:4px;
+  }
+  .layer-remove:hover{background:#f2f3f5;color:#c0392b;}
+  .layer-empty{
+    padding:10px 8px;
+    font-size:12px;
+    color:var(--muted);
+    text-align:center;
+  }
+  .download-note{
+    font-size:11.5px;
+    line-height:1.5;
+    color:var(--muted);
+    margin:12px 0 0;
+  }
+  .stage-wrap{
+    flex:1 1 auto;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:30px;
+    gap:14px;
+  }
+  .stage-zoom{
+    transform-origin:50% 50%;
+  }
+  .stage-container{
+    position:relative;
+    height:min(82vh, 720px);
+    aspect-ratio:73 / 145;
+    border-radius:10px;
+    overflow:hidden;
+    box-shadow:0 1px 3px rgba(0,0,0,.12), 0 8px 24px rgba(0,0,0,.08);
+    background-image:
+      linear-gradient(45deg, #e6e6ea 25%, transparent 25%),
+      linear-gradient(-45deg, #e6e6ea 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #e6e6ea 75%),
+      linear-gradient(-45deg, transparent 75%, #e6e6ea 75%);
+    background-size:18px 18px;
+    background-position:0 0, 0 9px, 9px -9px, -9px 0px;
+    background-color:#fff;
+    touch-action:none;
+  }
+  #stage{
+    display:block;
+    width:100%;
+    height:100%;
+  }
+  .handle-layer{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    display:none;
+  }
+  .handle{
+    position:absolute;
+    transform:translate(-50%,-50%);
+    pointer-events:auto;
+    border-radius:50%;
+    background:#fff;
+    border:2px solid var(--accent);
+    box-shadow:0 1px 4px rgba(0,0,0,.35);
+  }
+  .handle.corner{
+    width:16px;
+    height:16px;
+  }
+  .handle.rotate{
+    width:20px;
+    height:20px;
+    cursor:grab;
+    background:var(--accent);
+    border-color:#fff;
+  }
+  .hint{
+    font-size:12.5px;
+    color:var(--muted);
+    text-align:center;
+    max-width:420px;
+  }
+  @media (max-width:760px){
+    .app{flex-direction:column;}
+    .panel{width:auto;flex:none;border-right:none;border-bottom:1px solid var(--panel-border);}
+    .stage-container{height:min(60vh, 560px);}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="panel">
+    <h1>Rail Cover Customizer</h1>
+    <p class="sub">Upload one or more images, then drag to move, use the corner handles to resize, and the top handle (or shift + scroll, or the [ ] keys) to rotate. The image shows normally on the flat face and wraps at a 45&deg; angle down the beveled edges. Reorder layers by dragging them in the list below.</p>
+
+    <div class="field">
+      <label for="imageInput">Add image layer</label>
+      <input type="file" id="imageInput" accept="image/*" multiple>
+    </div>
+
+    <div class="field">
+      <label>Layers</label>
+      <ul class="layer-list" id="layerList"></ul>
+    </div>
+
+    <div class="btn-row" style="margin-bottom:18px;">
+      <button class="btn" id="fitBtn" disabled>Fit to shape</button>
+      <button class="btn" id="removeImgBtn" disabled>Remove layer</button>
+    </div>
+
+    <div class="field">
+      <label for="zoomRange">Zoom <span id="zoomLabel" style="font-weight:400;color:var(--muted);">100%</span></label>
+      <div class="row">
+        <input type="range" id="zoomRange" min="20" max="500" value="100" step="1" disabled>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="rotRange">Rotation <span id="rotLabel" style="font-weight:400;color:var(--muted);">0°</span></label>
+      <div class="row">
+        <input type="range" id="rotRange" min="-180" max="180" value="0" step="1" disabled>
+      </div>
+      <div class="btn-row" style="margin-top:8px;">
+        <button class="btn" id="rotLeftBtn" disabled>⟲ 15°</button>
+        <button class="btn" id="rotRightBtn" disabled>⟳ 15°</button>
+      </div>
+    </div>
+
+    <div class="field checkbox-row">
+      <input type="checkbox" id="guideCheckbox" checked>
+      <label for="guideCheckbox" style="margin:0;font-weight:400;">Show image outline guide</label>
+    </div>
+
+    <hr class="sep">
+
+    <div class="field">
+      <label for="shapeSelect">Background shape</label>
+      <select id="shapeSelect" style="width:100%;padding:7px 8px;font-size:13px;border-radius:8px;border:1px solid var(--panel-border);">
+        <option value="rail2">2&quot; Rail Cover</option>
+        <option value="rail3">3&quot; Rail Cover</option>
+      </select>
+    </div>
+
+    <hr class="sep">
+
+    <button class="btn btn-primary" id="downloadBtn" disabled title="This is a mockup of the rail cover with your images positioned where you want them, including the 45° wrap on the beveled edges">Download JPG</button>
+    <button class="btn btn-primary" id="downloadPngBtn" disabled title="This is a full quality, flat (unwrapped) export of your images layed how you want them">Download Full Layers (PNG)</button>
+    <p class="download-note">Download both the JPG and PNG for each rail cover, then email them to ross@regulusarms.com with your GunBroker order number as the subject line. You can send them as a zip file or as individual image attachments.</p>
+  </aside>
+
+  <main class="stage-wrap" id="stageWrap">
+    <div class="stage-zoom" id="stageZoomWrap">
+      <div class="stage-container" id="stageContainer">
+        <svg id="stage" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="handle-layer" id="handleLayer">
+          <div class="handle corner" id="handle-tl" style="cursor:nwse-resize;"></div>
+          <div class="handle corner" id="handle-tr" style="cursor:nesw-resize;"></div>
+          <div class="handle corner" id="handle-br" style="cursor:nwse-resize;"></div>
+          <div class="handle corner" id="handle-bl" style="cursor:nesw-resize;"></div>
+          <div class="handle rotate" id="handle-rotate" title="Rotate"></div>
+        </div>
+      </div>
+    </div>
+    <p class="hint">Drag inside the outline to move it, drag a corner to resize. Rotate by dragging the blue dot above it, holding shift while scrolling over the image, or pressing the [ and ] keys.</p>
+    <p class="hint">Scroll to zoom the workspace (<span id="viewZoomLabel">100%</span>), hold the middle mouse button to pan &mdash; this only changes your view, not the image size. Double-click the workspace to reset.</p>
+  </main>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const NS = "http://www.w3.org/2000/svg";
+  const XLINK = "http://www.w3.org/1999/xlink";
+
+  const SVG_RAIL_2IN = `<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 73 145">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #f5eedc;
+      }
+
+      .cls-1, .cls-2 {
+        stroke: #231f20;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-2 {
+        fill: #9c9280;
+      }
+    </style>
+  </defs>
+  <rect class="cls-2" x=".5" y=".5" width="72" height="144"/>
+  <rect class="cls-1" x="7.7" y=".5" width="57.6" height="144"/>
+</svg>`;
+
+  const SVG_RAIL_3IN = `<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 73 217">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #9c9280;
+      }
+
+      .cls-1, .cls-2 {
+        stroke: #231f20;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-2 {
+        fill: #f5eedc;
+      }
+    </style>
+  </defs>
+  <rect class="cls-1" x=".5" y=".5" width="72" height="216"/>
+  <rect class="cls-2" x="7.7" y=".5" width="57.6" height="216"/>
+</svg>`;
+
+  const BUILTIN_SHAPES = {
+    rail2: { label: "2\" Rail Cover", svg: SVG_RAIL_2IN },
+    rail3: { label: "3\" Rail Cover", svg: SVG_RAIL_3IN }
+  };
+
+  // A shape's paintable sub-areas are classified by fill lightness: the
+  // lightest fill is the flat face (shown undistorted); every other
+  // paintable area is treated as a face bent away from the viewer at this
+  // angle, so the image wrapping onto it is foreshortened by cos(angle).
+  const BEND_ANGLE_DEG = 45;
+  const BEND_FACTOR = Math.cos(BEND_ANGLE_DEG * Math.PI / 180);
+
+  // ---- state ----
+  let bg = null;              // { w, h, viewBox, bgClones, regions, coverageBBoxRect }
+  let layers = [];             // [{ id, name, naturalW, naturalH, dataURL, xform:{cx,cy,scale,rot}, fitScale }]
+  let selectedLayerId = null;
+  let layerIdCounter = 0;
+  let showGuide = true;
+  let currentShapeLabel = "";
+  let dragSrcLi = null;
+  let viewZoom = 1;            // workspace view zoom/pan only — never touches layer xforms or exports
+  let panX = 0, panY = 0;      // workspace pan, in real screen px
+  const VIEW_ZOOM_MIN = 0.4;
+  const VIEW_ZOOM_MAX = 5;
+
+  // ---- dom refs ----
+  const stage = document.getElementById("stage");
+  const stageWrap = document.getElementById("stageWrap");
+  const stageContainer = document.getElementById("stageContainer");
+  const stageZoomWrap = document.getElementById("stageZoomWrap");
+  const viewZoomLabel = document.getElementById("viewZoomLabel");
+  const handleLayer = document.getElementById("handleLayer");
+  const imageInput = document.getElementById("imageInput");
+  const layerListEl = document.getElementById("layerList");
+  const shapeSelect = document.getElementById("shapeSelect");
+  const fitBtn = document.getElementById("fitBtn");
+  const removeImgBtn = document.getElementById("removeImgBtn");
+  const zoomRange = document.getElementById("zoomRange");
+  const zoomLabel = document.getElementById("zoomLabel");
+  const rotRange = document.getElementById("rotRange");
+  const rotLabel = document.getElementById("rotLabel");
+  const rotLeftBtn = document.getElementById("rotLeftBtn");
+  const rotRightBtn = document.getElementById("rotRightBtn");
+  const guideCheckbox = document.getElementById("guideCheckbox");
+  const downloadBtn = document.getElementById("downloadBtn");
+  const downloadPngBtn = document.getElementById("downloadPngBtn");
+
+  // ---- layer helpers ----
+  function getSelectedLayer(){
+    return layers.find((l) => l.id === selectedLayerId) || null;
+  }
+
+  function transformString(xform){
+    return `translate(${xform.cx} ${xform.cy}) rotate(${xform.rot}) scale(${xform.scale})`;
+  }
+
+  // ---- background parsing ----
+  function parseAndLoadBackground(svgText){
+    let doc;
+    try{
+      doc = new DOMParser().parseFromString(svgText, "image/svg+xml");
+    }catch(e){
+      alert("Could not parse that SVG file.");
+      return;
+    }
+    const parseErr = doc.querySelector("parsererror");
+    const rootEl = doc.documentElement;
+    if (parseErr || !rootEl || rootEl.nodeName.toLowerCase() !== "svg"){
+      alert("That file doesn't look like a valid SVG.");
+      return;
+    }
+
+    let w, h, vb;
+    const vbAttr = rootEl.getAttribute("viewBox");
+    if (vbAttr){
+      const parts = vbAttr.trim().split(/[\s,]+/).map(Number);
+      w = parts[2]; h = parts[3]; vb = vbAttr;
+    } else {
+      w = parseFloat(rootEl.getAttribute("width")) || 300;
+      h = parseFloat(rootEl.getAttribute("height")) || 300;
+      vb = `0 0 ${w} ${h}`;
+    }
+    if (!w || !h || isNaN(w) || isNaN(h)){
+      alert("Couldn't determine the SVG's size (needs a viewBox or width/height).");
+      return;
+    }
+
+    // insert a live, offscreen copy so getComputedStyle / getBBox resolve correctly
+    const hidden = document.createElement("div");
+    hidden.style.cssText = "position:absolute;left:-99999px;top:0;width:0;height:0;overflow:hidden;";
+    document.body.appendChild(hidden);
+    const liveSvg = document.importNode(rootEl, true);
+    liveSvg.style.width = w + "px";
+    liveSvg.style.height = h + "px";
+    hidden.appendChild(liveSvg);
+
+    const shapeSelector = "path,rect,circle,ellipse,polygon,polyline";
+    const allShapes = Array.from(liveSvg.querySelectorAll(shapeSelector));
+    const bgClones = [];
+    const paintable = []; // [{ clipClone, bbox, luminance }]
+
+    allShapes.forEach((el) => {
+      let cs;
+      try{ cs = getComputedStyle(el); }catch(e){ cs = null; }
+      const fill = cs ? cs.fill : el.getAttribute("fill");
+      let fillOpacity = cs ? parseFloat(cs.fillOpacity) : 1;
+      if (isNaN(fillOpacity)) fillOpacity = 1;
+      const isNoneFill = !fill || fill === "none" || fill === "transparent" || fill === "rgba(0, 0, 0, 0)";
+      const isPaintable = !isNoneFill && fillOpacity > 0.01;
+
+      const bgClone = el.cloneNode(false);
+      bgClone.removeAttribute("class");
+      bgClone.removeAttribute("style");
+      if (fill) bgClone.setAttribute("fill", fill);
+      bgClone.setAttribute("fill-opacity", String(fillOpacity));
+      const stroke = cs ? cs.stroke : null;
+      if (stroke && stroke !== "none"){
+        bgClone.setAttribute("stroke", stroke);
+        bgClone.setAttribute("stroke-width", cs.strokeWidth || "1");
+        bgClone.setAttribute("stroke-opacity", cs.strokeOpacity || "1");
+      }
+      bgClones.push(bgClone);
+
+      if (isPaintable){
+        try{
+          const bb = el.getBBox();
+          if (bb.width > 0 && bb.height > 0){
+            const clipClone = el.cloneNode(false);
+            clipClone.removeAttribute("class");
+            clipClone.removeAttribute("style");
+            clipClone.removeAttribute("fill");
+            paintable.push({
+              clipClone,
+              bbox: { x:bb.x, y:bb.y, x2:bb.x+bb.width, y2:bb.y+bb.height },
+              luminance: relativeLuminance(fill)
+            });
+          }
+        }catch(e){ /* ignore */ }
+      }
+    });
+
+    document.body.removeChild(hidden);
+
+    let regions, coverageBBoxRect;
+    if (!paintable.length){
+      // no distinctly-filled shapes found; fall back to the whole canvas, unclipped, flat
+      const rect = document.createElementNS(NS, "rect");
+      rect.setAttribute("x", 0); rect.setAttribute("y", 0);
+      rect.setAttribute("width", w); rect.setAttribute("height", h);
+      regions = [{ axis:null, anchor:0, k:1, clipTemplateEls:[rect] }];
+      coverageBBoxRect = { x:0, y:0, w, h };
+    } else {
+      const built = buildRegions(paintable);
+      regions = built.regions;
+      coverageBBoxRect = built.coverageBBoxRect;
+    }
+
+    bg = { w, h, viewBox: vb, bgClones, regions, coverageBBoxRect };
+    stageContainer.style.aspectRatio = w + " / " + h;
+
+    buildStage();
+  }
+
+  // classifies paintable shapes into a flat region (lightest fill) plus one
+  // angled region per non-flat area that sticks out past the flat bbox,
+  // each anchored to the seam it shares with the flat face.
+  function buildRegions(paintable){
+    const maxLuminance = Math.max(...paintable.map((p) => p.luminance));
+    const flat = paintable.filter((p) => p.luminance >= maxLuminance - 2);
+    const angled = paintable.filter((p) => p.luminance < maxLuminance - 2);
+
+    const flatBBox = unionBBox(flat.map((p) => p.bbox));
+    const regions = [{ axis:null, anchor:0, k:1, clipTemplateEls: flat.map((p) => p.clipClone) }];
+    const coverage = { x:flatBBox.x, y:flatBBox.y, x2:flatBBox.x2, y2:flatBBox.y2 };
+    const k = BEND_FACTOR;
+    const EPS = 0.01;
+
+    angled.forEach(({ bbox }) => {
+      if (bbox.x < flatBBox.x - EPS){
+        const rw = flatBBox.x - bbox.x;
+        const anchor = flatBBox.x;
+        regions.push({ axis:'x', anchor, k, clipTemplateEls:[makeRect(bbox.x, bbox.y, rw, bbox.y2-bbox.y)] });
+        coverage.x = Math.min(coverage.x, anchor - rw / k);
+      }
+      if (bbox.x2 > flatBBox.x2 + EPS){
+        const rw = bbox.x2 - flatBBox.x2;
+        const anchor = flatBBox.x2;
+        regions.push({ axis:'x', anchor, k, clipTemplateEls:[makeRect(flatBBox.x2, bbox.y, rw, bbox.y2-bbox.y)] });
+        coverage.x2 = Math.max(coverage.x2, anchor + rw / k);
+      }
+      if (bbox.y < flatBBox.y - EPS){
+        const rh = flatBBox.y - bbox.y;
+        const anchor = flatBBox.y;
+        regions.push({ axis:'y', anchor, k, clipTemplateEls:[makeRect(bbox.x, bbox.y, bbox.x2-bbox.x, rh)] });
+        coverage.y = Math.min(coverage.y, anchor - rh / k);
+      }
+      if (bbox.y2 > flatBBox.y2 + EPS){
+        const rh = bbox.y2 - flatBBox.y2;
+        const anchor = flatBBox.y2;
+        regions.push({ axis:'y', anchor, k, clipTemplateEls:[makeRect(bbox.x, flatBBox.y2, bbox.x2-bbox.x, rh)] });
+        coverage.y2 = Math.max(coverage.y2, anchor + rh / k);
+      }
+    });
+
+    return {
+      regions,
+      coverageBBoxRect: { x:coverage.x, y:coverage.y, w:coverage.x2-coverage.x, h:coverage.y2-coverage.y }
+    };
+  }
+
+  function unionBBox(bboxes){
+    return bboxes.reduce((acc, bb) => !acc ? { ...bb } : {
+      x: Math.min(acc.x, bb.x), y: Math.min(acc.y, bb.y),
+      x2: Math.max(acc.x2, bb.x2), y2: Math.max(acc.y2, bb.y2)
+    }, null);
+  }
+
+  function makeRect(x, y, w, h){
+    const r = document.createElementNS(NS, "rect");
+    r.setAttribute("x", x); r.setAttribute("y", y);
+    r.setAttribute("width", w); r.setAttribute("height", h);
+    return r;
+  }
+
+  function relativeLuminance(colorStr){
+    let r, g, b;
+    const m = colorStr && colorStr.match(/rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/i);
+    if (m){
+      r = parseFloat(m[1]); g = parseFloat(m[2]); b = parseFloat(m[3]);
+    } else {
+      const c = document.createElement("canvas");
+      c.width = 1; c.height = 1;
+      const ctx = c.getContext("2d");
+      try{
+        ctx.fillStyle = colorStr || "#000";
+        ctx.fillRect(0, 0, 1, 1);
+        const d = ctx.getImageData(0, 0, 1, 1).data;
+        r = d[0]; g = d[1]; b = d[2];
+      }catch(e){ r = g = b = 128; }
+    }
+    return 0.2126*r + 0.7152*g + 0.0722*b;
+  }
+
+  function regionTransformString(region){
+    if (!region.axis) return null;
+    const k = region.k, a = region.anchor;
+    return region.axis === 'x'
+      ? `matrix(${k} 0 0 1 ${a*(1-k)} 0)`
+      : `matrix(1 0 0 ${k} 0 ${a*(1-k)})`;
+  }
+
+  // ---- fit / transform helpers ----
+  function fitTransform(layer){
+    if (!layer || !bg) return;
+    const cbb = bg.coverageBBoxRect;
+    const fitScale = Math.max(cbb.w/layer.naturalW, cbb.h/layer.naturalH) || 1;
+    layer.fitScale = fitScale;
+    layer.xform = { cx: cbb.x + cbb.w/2, cy: cbb.y + cbb.h/2, scale: fitScale, rot: 0 };
+  }
+
+  // ---- shared: one <g> per image layer, in its own (unbent) local frame ----
+  function buildLayerGroup(layer){
+    const g = document.createElementNS(NS, "g");
+    g.setAttribute("data-layer-id", String(layer.id));
+    g.setAttribute("transform", transformString(layer.xform));
+    const imageEl = document.createElementNS(NS, "image");
+    imageEl.setAttributeNS(XLINK, "href", layer.dataURL);
+    imageEl.setAttribute("href", layer.dataURL);
+    imageEl.setAttribute("x", -layer.naturalW/2);
+    imageEl.setAttribute("y", -layer.naturalH/2);
+    imageEl.setAttribute("width", layer.naturalW);
+    imageEl.setAttribute("height", layer.naturalH);
+    imageEl.setAttribute("preserveAspectRatio", "none");
+    g.appendChild(imageEl);
+    return g;
+  }
+
+  // ---- shared: appends the background fill + one clipped, bend-transformed
+  // group per region (flat face + each angled face) into an <svg> ----
+  function appendRegionsToSvg(svgEl, idPrefix){
+    const defs = document.createElementNS(NS, "defs");
+    bg.regions.forEach((region, i) => {
+      const clipPath = document.createElementNS(NS, "clipPath");
+      clipPath.id = idPrefix + "-clip-" + i;
+      region.clipTemplateEls.forEach((el) => clipPath.appendChild(el.cloneNode(true)));
+      defs.appendChild(clipPath);
+    });
+    svgEl.appendChild(defs);
+
+    const bgGroup = document.createElementNS(NS, "g");
+    bgGroup.id = "bgLayer";
+    bg.bgClones.forEach((c) => bgGroup.appendChild(c.cloneNode(true)));
+    svgEl.appendChild(bgGroup);
+
+    bg.regions.forEach((region, i) => {
+      const clipG = document.createElementNS(NS, "g");
+      clipG.setAttribute("clip-path", `url(#${idPrefix}-clip-${i})`);
+      const bendG = document.createElementNS(NS, "g");
+      const t = regionTransformString(region);
+      if (t) bendG.setAttribute("transform", t);
+      layers.forEach((layer) => bendG.appendChild(buildLayerGroup(layer)));
+      clipG.appendChild(bendG);
+      svgEl.appendChild(clipG);
+    });
+  }
+
+  // ---- building the visible stage ----
+  function buildStage(){
+    stage.innerHTML = "";
+    if (!bg) return;
+    stage.setAttribute("viewBox", bg.viewBox);
+    stage.setAttribute("preserveAspectRatio", "xMidYMid meet");
+
+    appendRegionsToSvg(stage, "stage");
+
+    const selected = getSelectedLayer();
+    if (selected){
+      const guideG = document.createElementNS(NS, "g");
+      guideG.id = "guideGroup";
+      guideG.setAttribute("transform", transformString(selected.xform));
+      const guideRect = document.createElementNS(NS, "rect");
+      guideRect.id = "guideRect";
+      guideRect.setAttribute("x", -selected.naturalW/2);
+      guideRect.setAttribute("y", -selected.naturalH/2);
+      guideRect.setAttribute("width", selected.naturalW);
+      guideRect.setAttribute("height", selected.naturalH);
+      guideRect.setAttribute("fill", "#ffffff");
+      guideRect.setAttribute("fill-opacity", "0.001");
+      guideRect.setAttribute("stroke", "#3b82f6");
+      const sw = Math.max(bg.w, bg.h) * 0.003;
+      guideRect.setAttribute("stroke-width", String(sw));
+      guideRect.setAttribute("stroke-dasharray", (sw*4) + "," + (sw*3));
+      guideRect.setAttribute("pointer-events", "all");
+      guideRect.style.cursor = "grab";
+      guideRect.style.strokeOpacity = showGuide ? "1" : "0";
+      guideG.appendChild(guideRect);
+      stage.appendChild(guideG);
+    }
+
+    updateHandles();
+    attachStageInteractions();
+  }
+
+  function updateSelectedLayerTransform(){
+    const selected = getSelectedLayer();
+    if (!selected) return;
+    const t = transformString(selected.xform);
+    stage.querySelectorAll('[data-layer-id="' + selected.id + '"]').forEach((lg) => lg.setAttribute("transform", t));
+    const gg = document.getElementById("guideGroup");
+    if (gg) gg.setAttribute("transform", t);
+    updateHandles();
+  }
+
+  // ---- coordinate conversion ----
+  function stagePointFromEvent(evt){
+    const pt = stage.createSVGPoint();
+    pt.x = evt.clientX;
+    pt.y = evt.clientY;
+    const ctm = stage.getScreenCTM();
+    if (!ctm) return { x:0, y:0 };
+    const inv = ctm.inverse();
+    const p = pt.matrixTransform(inv);
+    return { x:p.x, y:p.y };
+  }
+
+  function localToStage(xform, lx, ly){
+    const rad = xform.rot * Math.PI/180;
+    const sx = lx * xform.scale;
+    const sy = ly * xform.scale;
+    const rx = sx*Math.cos(rad) - sy*Math.sin(rad);
+    const ry = sx*Math.sin(rad) + sy*Math.cos(rad);
+    return { x: xform.cx + rx, y: xform.cy + ry };
+  }
+
+  function stagePointToContainerPx(x, y){
+    const pt = stage.createSVGPoint();
+    pt.x = x; pt.y = y;
+    const ctm = stage.getScreenCTM();
+    if (!ctm) return { x:0, y:0 };
+    const screenPt = pt.matrixTransform(ctm);
+    const rect = stageContainer.getBoundingClientRect();
+    // rect is in real (post view-zoom) screen pixels, but the handle elements
+    // are positioned in stageContainer's own local CSS px, which the
+    // stage-zoom wrapper's transform re-scales on paint — so divide it back out.
+    return { x: (screenPt.x - rect.left) / viewZoom, y: (screenPt.y - rect.top) / viewZoom };
+  }
+
+  // ---- handles ----
+  function updateHandles(){
+    const selected = getSelectedLayer();
+    if (!selected){
+      handleLayer.style.display = "none";
+      return;
+    }
+    handleLayer.style.display = "block";
+    const hw = selected.naturalW/2, hh = selected.naturalH/2;
+    const corners = {
+      tl: localToStage(selected.xform, -hw, -hh),
+      tr: localToStage(selected.xform, hw, -hh),
+      br: localToStage(selected.xform, hw, hh),
+      bl: localToStage(selected.xform, -hw, hh)
+    };
+    const rotLocalY = -hh - Math.max(selected.naturalW, selected.naturalH) * 0.14 - 10;
+    const rotStage = localToStage(selected.xform, 0, rotLocalY);
+
+    placeHandle("handle-tl", corners.tl);
+    placeHandle("handle-tr", corners.tr);
+    placeHandle("handle-br", corners.br);
+    placeHandle("handle-bl", corners.bl);
+    placeHandle("handle-rotate", rotStage);
+  }
+
+  function placeHandle(id, stagePt){
+    const px = stagePointToContainerPx(stagePt.x, stagePt.y);
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.left = px.x + "px";
+    el.style.top = px.y + "px";
+  }
+
+  // ---- dragging: move (guide rect, recreated on buildStage) ----
+  function attachStageInteractions(){
+    const guideRect = document.getElementById("guideRect");
+    if (!guideRect) return;
+    guideRect.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0) return; // let middle-click bubble up to workspace panning
+      const selected = getSelectedLayer();
+      if (!selected) return;
+      e.preventDefault();
+      guideRect.style.cursor = "grabbing";
+      const start = stagePointFromEvent(e);
+      const startCx = selected.xform.cx, startCy = selected.xform.cy;
+      function move(ev){
+        const cur = stagePointFromEvent(ev);
+        selected.xform.cx = startCx + (cur.x - start.x);
+        selected.xform.cy = startCy + (cur.y - start.y);
+        updateSelectedLayerTransform();
+      }
+      function up(){
+        guideRect.style.cursor = "grab";
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+      }
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+    });
+  }
+
+  // ---- dragging: resize (corner handles, attached once) ----
+  function attachCornerHandle(id){
+    const el = document.getElementById(id);
+    el.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0) return; // let middle-click bubble up to workspace panning
+      const selected = getSelectedLayer();
+      if (!selected) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const start = stagePointFromEvent(e);
+      const dx0 = start.x - selected.xform.cx, dy0 = start.y - selected.xform.cy;
+      const startDist = Math.hypot(dx0, dy0) || 0.0001;
+      const startScale = selected.xform.scale;
+      function move(ev){
+        const cur = stagePointFromEvent(ev);
+        const dist = Math.hypot(cur.x - selected.xform.cx, cur.y - selected.xform.cy);
+        let newScale = startScale * (dist / startDist);
+        newScale = Math.max(0.02, Math.min(newScale, 60));
+        selected.xform.scale = newScale;
+        updateSelectedLayerTransform();
+        syncZoomSlider();
+      }
+      function up(){
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+      }
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+    });
+  }
+  ["handle-tl","handle-tr","handle-br","handle-bl"].forEach(attachCornerHandle);
+
+  // ---- dragging: rotate ----
+  (function attachRotateHandle(){
+    const el = document.getElementById("handle-rotate");
+    el.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0) return; // let middle-click bubble up to workspace panning
+      const selected = getSelectedLayer();
+      if (!selected) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const start = stagePointFromEvent(e);
+      const startAngle = Math.atan2(start.y - selected.xform.cy, start.x - selected.xform.cx) * 180/Math.PI;
+      const startRot = selected.xform.rot;
+      function move(ev){
+        const cur = stagePointFromEvent(ev);
+        const curAngle = Math.atan2(cur.y - selected.xform.cy, cur.x - selected.xform.cx) * 180/Math.PI;
+        selected.xform.rot = startRot + (curAngle - startAngle);
+        updateSelectedLayerTransform();
+        syncRotationSlider();
+      }
+      function up(){
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+      }
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+    });
+  })();
+
+  // ---- slider / control sync ----
+  function syncZoomSlider(){
+    const selected = getSelectedLayer();
+    if (!selected){
+      zoomRange.value = 100;
+      zoomLabel.textContent = "100%";
+      return;
+    }
+    const pct = Math.round((selected.xform.scale / (selected.fitScale || 1)) * 100);
+    const clamped = Math.min(500, Math.max(20, pct));
+    zoomRange.value = clamped;
+    zoomLabel.textContent = pct + "%";
+  }
+  function syncRotationSlider(){
+    const selected = getSelectedLayer();
+    if (!selected){
+      rotRange.value = 0;
+      rotLabel.textContent = "0°";
+      return;
+    }
+    let r = ((selected.xform.rot % 360) + 360) % 360;
+    if (r > 180) r -= 360;
+    rotRange.value = Math.round(r);
+    rotLabel.textContent = Math.round(selected.xform.rot % 360) + "°";
+  }
+
+  function updateControlsEnabled(){
+    const hasSelection = !!getSelectedLayer();
+    const hasLayers = layers.length > 0;
+    fitBtn.disabled = !hasSelection;
+    removeImgBtn.disabled = !hasSelection;
+    zoomRange.disabled = !hasSelection;
+    rotRange.disabled = !hasSelection;
+    rotLeftBtn.disabled = !hasSelection;
+    rotRightBtn.disabled = !hasSelection;
+    downloadBtn.disabled = !hasLayers;
+    downloadPngBtn.disabled = !hasLayers;
+  }
+
+  // ---- layer list UI ----
+  function renderLayerList(){
+    layerListEl.innerHTML = "";
+    if (!layers.length){
+      const empty = document.createElement("div");
+      empty.className = "layer-empty";
+      empty.textContent = "No layers yet — add an image above.";
+      layerListEl.appendChild(empty);
+      return;
+    }
+    // top of list = front-most layer (rendered last / on top)
+    const topToBottom = layers.slice().reverse();
+    topToBottom.forEach((layer) => {
+      const li = document.createElement("li");
+      li.className = "layer-item" + (layer.id === selectedLayerId ? " active" : "");
+      li.draggable = true;
+      li.dataset.id = String(layer.id);
+
+      const handle = document.createElement("span");
+      handle.className = "layer-drag-handle";
+      handle.textContent = "⠿";
+      li.appendChild(handle);
+
+      const name = document.createElement("span");
+      name.className = "layer-name";
+      name.textContent = layer.name;
+      li.appendChild(name);
+
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "layer-remove";
+      removeBtn.title = "Remove layer";
+      removeBtn.textContent = "×";
+      removeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        removeLayer(layer.id);
+      });
+      li.appendChild(removeBtn);
+
+      li.addEventListener("click", () => selectLayer(layer.id));
+
+      li.addEventListener("dragstart", (e) => {
+        dragSrcLi = li;
+        li.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+        try{ e.dataTransfer.setData("text/plain", li.dataset.id); }catch(err){ /* ignore */ }
+      });
+      li.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        if (!dragSrcLi || dragSrcLi === li) return;
+        const rect = li.getBoundingClientRect();
+        const after = (e.clientY - rect.top) > rect.height/2;
+        li.parentNode.insertBefore(dragSrcLi, after ? li.nextSibling : li);
+      });
+      li.addEventListener("drop", (e) => {
+        e.preventDefault();
+      });
+      li.addEventListener("dragend", () => {
+        li.classList.remove("dragging");
+        dragSrcLi = null;
+        const idsTopToBottom = Array.from(layerListEl.children)
+          .filter((el) => el.dataset && el.dataset.id)
+          .map((el) => el.dataset.id);
+        const idsBottomToTop = idsTopToBottom.slice().reverse();
+        layers = idsBottomToTop
+          .map((id) => layers.find((l) => String(l.id) === id))
+          .filter(Boolean);
+        buildStage();
+      });
+
+      layerListEl.appendChild(li);
+    });
+  }
+
+  function selectLayer(id){
+    selectedLayerId = id;
+    renderLayerList();
+    buildStage();
+    syncZoomSlider();
+    syncRotationSlider();
+    updateControlsEnabled();
+  }
+
+  function removeLayer(id){
+    layers = layers.filter((l) => l.id !== id);
+    if (selectedLayerId === id){
+      selectedLayerId = layers.length ? layers[layers.length - 1].id : null;
+    }
+    renderLayerList();
+    buildStage();
+    syncZoomSlider();
+    syncRotationSlider();
+    updateControlsEnabled();
+  }
+
+  // ---- events: image upload (adds one layer per selected file) ----
+  imageInput.addEventListener("change", (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const dataURL = ev.target.result;
+        const tmp = new Image();
+        tmp.onload = () => {
+          const layer = {
+            id: ++layerIdCounter,
+            name: file.name || ("Layer " + layerIdCounter),
+            naturalW: tmp.naturalWidth || 300,
+            naturalH: tmp.naturalHeight || 300,
+            dataURL,
+            xform: { cx:0, cy:0, scale:1, rot:0 },
+            fitScale: 1
+          };
+          layers.push(layer);
+          if (bg) fitTransform(layer);
+          selectedLayerId = layer.id;
+          renderLayerList();
+          buildStage();
+          syncZoomSlider();
+          syncRotationSlider();
+          updateControlsEnabled();
+        };
+        tmp.onerror = () => alert("Couldn't read " + (file.name || "that image") + ".");
+        tmp.src = dataURL;
+      };
+      reader.onerror = () => alert("Couldn't read " + (file.name || "that file") + ".");
+      reader.readAsDataURL(file);
+    });
+    imageInput.value = "";
+  });
+
+  // ---- events: shape select (built-in shapes) ----
+  shapeSelect.addEventListener("change", () => {
+    const shape = BUILTIN_SHAPES[shapeSelect.value];
+    if (!shape) return;
+    currentShapeLabel = shape.label;
+    parseAndLoadBackground(shape.svg);
+  });
+
+  // ---- events: controls ----
+  fitBtn.addEventListener("click", () => {
+    const selected = getSelectedLayer();
+    if (!selected || !bg) return;
+    fitTransform(selected);
+    updateSelectedLayerTransform();
+    syncZoomSlider();
+    syncRotationSlider();
+  });
+
+  removeImgBtn.addEventListener("click", () => {
+    const selected = getSelectedLayer();
+    if (!selected) return;
+    removeLayer(selected.id);
+  });
+
+  zoomRange.addEventListener("input", () => {
+    const selected = getSelectedLayer();
+    if (!selected) return;
+    selected.xform.scale = (selected.fitScale || 1) * (parseFloat(zoomRange.value) / 100);
+    zoomLabel.textContent = zoomRange.value + "%";
+    updateSelectedLayerTransform();
+  });
+
+  rotRange.addEventListener("input", () => {
+    const selected = getSelectedLayer();
+    if (!selected) return;
+    selected.xform.rot = parseFloat(rotRange.value);
+    rotLabel.textContent = Math.round(selected.xform.rot) + "°";
+    updateSelectedLayerTransform();
+  });
+
+  rotLeftBtn.addEventListener("click", () => {
+    const selected = getSelectedLayer();
+    if (!selected) return;
+    selected.xform.rot -= 15;
+    updateSelectedLayerTransform();
+    syncRotationSlider();
+  });
+  rotRightBtn.addEventListener("click", () => {
+    const selected = getSelectedLayer();
+    if (!selected) return;
+    selected.xform.rot += 15;
+    updateSelectedLayerTransform();
+    syncRotationSlider();
+  });
+
+  guideCheckbox.addEventListener("change", () => {
+    showGuide = guideCheckbox.checked;
+    const gr = document.getElementById("guideRect");
+    if (gr) gr.style.strokeOpacity = showGuide ? "1" : "0";
+  });
+
+  // ---- workspace view zoom + pan ----
+  // These only affect how the workspace is displayed (a CSS transform on the
+  // wrapper around stageContainer) — they never touch layer xforms, fitScale,
+  // or anything that feeds the exports.
+  function applyStageTransform(){
+    const parts = [];
+    if (panX || panY) parts.push(`translate(${panX}px, ${panY}px)`);
+    if (viewZoom !== 1) parts.push(`scale(${viewZoom})`);
+    stageZoomWrap.style.transform = parts.join(" ");
+    viewZoomLabel.textContent = Math.round(viewZoom * 100) + "%";
+    updateHandles();
+  }
+
+  function setViewZoom(next){
+    viewZoom = Math.min(VIEW_ZOOM_MAX, Math.max(VIEW_ZOOM_MIN, next));
+    applyStageTransform();
+  }
+
+  function resetView(){
+    viewZoom = 1;
+    panX = 0; panY = 0;
+    applyStageTransform();
+  }
+
+  // plain scroll = zoom, works over the shape and the surrounding background
+  stageWrap.addEventListener("wheel", (e) => {
+    if (e.shiftKey){
+      // shift + scroll rotates the selected layer instead of zooming
+      const selected = getSelectedLayer();
+      if (!selected) return;
+      e.preventDefault();
+      const step = e.deltaY > 0 ? 5 : -5;
+      selected.xform.rot += step;
+      updateSelectedLayerTransform();
+      syncRotationSlider();
+      return;
+    }
+    e.preventDefault();
+    const factor = Math.pow(1.0015, -e.deltaY);
+    setViewZoom(viewZoom * factor);
+  }, { passive:false });
+
+  stageWrap.addEventListener("dblclick", () => resetView());
+
+  // middle-mouse-button drag = pan the workspace, works over the shape and
+  // the surrounding background
+  stageWrap.addEventListener("pointerdown", (e) => {
+    if (e.button !== 1) return;
+    e.preventDefault();
+    const startX = e.clientX, startY = e.clientY;
+    const startPanX = panX, startPanY = panY;
+    stageWrap.style.cursor = "grabbing";
+    function move(ev){
+      panX = startPanX + (ev.clientX - startX);
+      panY = startPanY + (ev.clientY - startY);
+      applyStageTransform();
+    }
+    function up(){
+      stageWrap.style.cursor = "";
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    }
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  });
+
+  // ---- rotate without the slider: [ and ] keys ----
+  window.addEventListener("keydown", (e) => {
+    const selected = getSelectedLayer();
+    if (!selected) return;
+    const tag = (document.activeElement && document.activeElement.tagName) || "";
+    if (["INPUT","SELECT","TEXTAREA"].includes(tag)) return; // don't hijack typing/sliders
+    if (e.key !== "[" && e.key !== "]") return;
+    e.preventDefault();
+    const step = e.shiftKey ? 15 : 1;
+    selected.xform.rot += (e.key === "]" ? step : -step);
+    updateSelectedLayerTransform();
+    syncRotationSlider();
+  });
+
+  window.addEventListener("resize", updateHandles);
+  window.addEventListener("scroll", updateHandles, true);
+
+  // ---- shared export helpers ----
+  function buildExportFilename(ext, suffix){
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const timestamp = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+    const shapeSlug = (currentShapeLabel || "shape").replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "");
+    const suffixPart = suffix ? `-${suffix}` : "";
+    return `${timestamp}-${shapeSlug}${suffixPart}.${ext}`;
+  }
+
+  function buildClippedLayersSvg(){
+    const outSvg = document.createElementNS(NS, "svg");
+    outSvg.setAttribute("xmlns", NS);
+    outSvg.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", XLINK);
+    outSvg.setAttribute("viewBox", bg.viewBox);
+    outSvg.setAttribute("width", bg.w);
+    outSvg.setAttribute("height", bg.h);
+
+    appendRegionsToSvg(outSvg, "export");
+
+    return outSvg;
+  }
+
+  function layerCorners(layer){
+    const hw = layer.naturalW/2, hh = layer.naturalH/2;
+    const pts = [[-hw,-hh],[hw,-hh],[hw,hh],[-hw,hh]];
+    return pts.map(([lx, ly]) => localToStage(layer.xform, lx, ly));
+  }
+
+  function computeFullLayersBounds(){
+    let minX = 0, minY = 0, maxX = bg.w, maxY = bg.h;
+    layers.forEach((layer) => {
+      layerCorners(layer).forEach((p) => {
+        minX = Math.min(minX, p.x);
+        minY = Math.min(minY, p.y);
+        maxX = Math.max(maxX, p.x);
+        maxY = Math.max(maxY, p.y);
+      });
+    });
+    return { x:minX, y:minY, w:maxX-minX, h:maxY-minY };
+  }
+
+  function buildFullLayersSvg(bounds){
+    const outSvg = document.createElementNS(NS, "svg");
+    outSvg.setAttribute("xmlns", NS);
+    outSvg.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", XLINK);
+    outSvg.setAttribute("viewBox", `${bounds.x} ${bounds.y} ${bounds.w} ${bounds.h}`);
+    outSvg.setAttribute("width", bounds.w);
+    outSvg.setAttribute("height", bounds.h);
+
+    const bgGroup = document.createElementNS(NS, "g");
+    bg.bgClones.forEach((c) => bgGroup.appendChild(c.cloneNode(true)));
+    outSvg.appendChild(bgGroup);
+
+    layers.forEach((layer) => outSvg.appendChild(buildLayerGroup(layer)));
+
+    return outSvg;
+  }
+
+  function rasterizeSvgToBlob(outSvg, canvasW, canvasH, opts, cb){
+    const svgString = new XMLSerializer().serializeToString(outSvg);
+    let svg64;
+    try{
+      svg64 = btoa(unescape(encodeURIComponent(svgString)));
+    }catch(e){
+      cb(null, "Export failed while encoding the image.");
+      return;
+    }
+    const dataUrl = "data:image/svg+xml;base64," + svg64;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = canvasW;
+    canvas.height = canvasH;
+    const ctx = canvas.getContext("2d");
+
+    const im = new Image();
+    im.onload = () => {
+      if (opts.background){
+        ctx.fillStyle = opts.background;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      ctx.drawImage(im, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => {
+        if (!blob){
+          cb(null, "Export failed while creating the image.");
+          return;
+        }
+        cb(blob, null);
+      }, opts.mime, opts.quality);
+    };
+    im.onerror = () => cb(null, "Export failed while rendering the image. Try different photos.");
+    im.src = dataUrl;
+  }
+
+  function triggerDownload(blob, filename){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+  }
+
+  // ---- export: clipped JPG (what shows through the shape) ----
+  function exportJPG(){
+    if (!layers.length || !bg){
+      alert("Add at least one image layer first.");
+      return;
+    }
+    downloadBtn.disabled = true;
+    downloadBtn.textContent = "Preparing…";
+
+    const outSvg = buildClippedLayersSvg();
+    const longSide = Math.max(bg.w, bg.h);
+    const exportScale = Math.max(1, Math.min(8, Math.round(2400 / longSide)));
+    const canvasW = Math.max(1, Math.round(bg.w * exportScale));
+    const canvasH = Math.max(1, Math.round(bg.h * exportScale));
+
+    rasterizeSvgToBlob(outSvg, canvasW, canvasH, { background:"#ffffff", mime:"image/jpeg", quality:0.75 }, (blob, err) => {
+      if (err){ alert(err); resetDownloadBtn(); return; }
+      triggerDownload(blob, buildExportFilename("jpg"));
+      resetDownloadBtn();
+    });
+  }
+
+  function resetDownloadBtn(){
+    downloadBtn.disabled = layers.length === 0;
+    downloadBtn.textContent = "Download JPG";
+  }
+
+  // ---- export: full, unclipped layer stack as PNG, extended to cover every layer ----
+  function exportFullLayersPNG(){
+    if (!layers.length || !bg){
+      alert("Add at least one image layer first.");
+      return;
+    }
+    downloadPngBtn.disabled = true;
+    downloadPngBtn.textContent = "Preparing…";
+
+    const bounds = computeFullLayersBounds();
+    const outSvg = buildFullLayersSvg(bounds);
+    const longSide = Math.max(bounds.w, bounds.h);
+    const exportScale = Math.max(1, Math.min(8, Math.round(3000 / longSide)));
+    const canvasW = Math.max(1, Math.round(bounds.w * exportScale));
+    const canvasH = Math.max(1, Math.round(bounds.h * exportScale));
+
+    rasterizeSvgToBlob(outSvg, canvasW, canvasH, { background:null, mime:"image/png" }, (blob, err) => {
+      if (err){ alert(err); resetDownloadPngBtn(); return; }
+      triggerDownload(blob, buildExportFilename("png", "full-layers"));
+      resetDownloadPngBtn();
+    });
+  }
+
+  function resetDownloadPngBtn(){
+    downloadPngBtn.disabled = layers.length === 0;
+    downloadPngBtn.textContent = "Download Full Layers (PNG)";
+  }
+
+  downloadBtn.addEventListener("click", exportJPG);
+  downloadPngBtn.addEventListener("click", exportFullLayersPNG);
+
+  // ---- init ----
+  shapeSelect.value = "rail2";
+  currentShapeLabel = BUILTIN_SHAPES.rail2.label;
+  parseAndLoadBackground(BUILTIN_SHAPES.rail2.svg);
+  renderLayerList();
+  updateControlsEnabled();
+})();
+</script>
+</body>
+</html>
