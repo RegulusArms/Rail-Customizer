@@ -104,9 +104,6 @@
     font-weight:600;
   }
   .btn-primary:hover{background:#2f6fdb;}
-  .btn-primary + .btn-primary{
-    margin-top:8px;
-  }
   .checkbox-row{
     display:flex;
     align-items:center;
@@ -305,14 +302,18 @@
       <select id="shapeSelect" style="width:100%;padding:7px 8px;font-size:13px;border-radius:8px;border:1px solid var(--panel-border);">
         <option value="rail2">2&quot; Rail Cover</option>
         <option value="rail3">3&quot; Rail Cover</option>
+        <option value="keychain2">2&quot; Rail Keychain</option>
+        <option value="keychain2Mirror">2&quot; Rail Keychain (Mirrored)</option>
+        <option value="keychain3">3&quot; Rail Keychain</option>
+        <option value="keychain3Mirror">3&quot; Rail Keychain (Mirrored)</option>
       </select>
+      <button class="btn" id="rotateShapeBtn" style="width:100%;margin-top:8px;">⟳ Rotate Shape 90&deg;</button>
     </div>
 
     <hr class="sep">
 
-    <button class="btn btn-primary" id="downloadBtn" disabled title="This is a mockup of the rail cover with your images positioned where you want them, including the 45° wrap on the beveled edges">Download JPG</button>
-    <button class="btn btn-primary" id="downloadPngBtn" disabled title="This is a full quality, flat (unwrapped) export of your images layed how you want them">Download Full Layers (PNG)</button>
-    <p class="download-note">Download both the JPG and PNG for each rail cover, then email them to ross@regulusarms.com with your GunBroker order number as the subject line. You can send them as a zip file or as individual image attachments.</p>
+    <button class="btn btn-primary" id="downloadZipBtn" disabled title="A zip containing your original uploaded images, a mockup JPG of the rail cover with the 45° wrap, and a full quality flat (unwrapped) PNG of your layers">Download ZIP</button>
+    <p class="download-note">Download the zip for each rail cover, then email it to ross@regulusarms.com with your GunBroker order number as the subject line.</p>
   </aside>
 
   <main class="stage-wrap" id="stageWrap">
@@ -383,9 +384,114 @@
   <rect class="cls-2" x="7.7" y=".5" width="57.6" height="216"/>
 </svg>`;
 
+  // Keychain shapes: a rail-cover-style main face plus a small keyring tab
+  // stuck off to one side. The tab's flat sliver (nearest the main body) sits
+  // in front of a full-size dark rect, exposing a dark tip at its outer end —
+  // same "wide dark rect behind a narrower flat rect" trick as the main body,
+  // just applied on a second, disconnected pair of shapes.
+  const SVG_KEYCHAIN_2IN = `<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 89.86 145">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #9c9280;
+      }
+
+      .cls-1, .cls-2 {
+        stroke: #231f20;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-2 {
+        fill: #f5eedc;
+      }
+    </style>
+  </defs>
+  <rect class="cls-1" x=".5" y="130.1" width="16.86" height="14.4"/>
+  <rect class="cls-1" x="17.36" y=".5" width="72" height="144"/>
+  <rect class="cls-2" x="6.26" y="130.1" width="11.1" height="14.4"/>
+  <rect class="cls-2" x="24.56" y=".5" width="57.6" height="144"/>
+</svg>`;
+
+  const SVG_KEYCHAIN_2IN_MIRROR = `<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 89.86 145">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #9c9280;
+      }
+
+      .cls-1, .cls-2 {
+        stroke: #231f20;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-2 {
+        fill: #f5eedc;
+      }
+    </style>
+  </defs>
+  <rect class="cls-1" x="72.5" y="130.1" width="16.86" height="14.4"/>
+  <rect class="cls-1" x=".5" y=".5" width="72" height="144"/>
+  <rect class="cls-2" x="72.5" y="130.1" width="11.1" height="14.4"/>
+  <rect class="cls-2" x="7.7" y=".5" width="57.6" height="144"/>
+</svg>`;
+
+  const SVG_KEYCHAIN_3IN = `<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 89.86 217">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #9c9280;
+      }
+
+      .cls-1, .cls-2 {
+        stroke: #231f20;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-2 {
+        fill: #f5eedc;
+      }
+    </style>
+  </defs>
+  <rect class="cls-1" x=".5" y="202.1" width="16.86" height="14.4"/>
+  <rect class="cls-1" x="17.36" y=".5" width="72" height="216"/>
+  <rect class="cls-2" x="6.26" y="202.1" width="11.1" height="14.4"/>
+  <rect class="cls-2" x="24.56" y=".5" width="57.6" height="216"/>
+</svg>`;
+
+  const SVG_KEYCHAIN_3IN_MIRROR = `<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 89.86 217">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #9c9280;
+      }
+
+      .cls-1, .cls-2 {
+        stroke: #231f20;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-2 {
+        fill: #f5eedc;
+      }
+    </style>
+  </defs>
+  <rect class="cls-1" x="72.5" y="202.1" width="16.86" height="14.4"/>
+  <rect class="cls-1" x=".5" y=".5" width="72" height="216"/>
+  <rect class="cls-2" x="72.5" y="202.1" width="11.1" height="14.4"/>
+  <rect class="cls-2" x="7.7" y=".5" width="57.6" height="216"/>
+</svg>`;
+
   const BUILTIN_SHAPES = {
     rail2: { label: "2\" Rail Cover", svg: SVG_RAIL_2IN },
-    rail3: { label: "3\" Rail Cover", svg: SVG_RAIL_3IN }
+    rail3: { label: "3\" Rail Cover", svg: SVG_RAIL_3IN },
+    keychain2: { label: "2\" Rail Keychain", svg: SVG_KEYCHAIN_2IN },
+    keychain2Mirror: { label: "2\" Rail Keychain (Mirrored)", svg: SVG_KEYCHAIN_2IN_MIRROR },
+    keychain3: { label: "3\" Rail Keychain", svg: SVG_KEYCHAIN_3IN },
+    keychain3Mirror: { label: "3\" Rail Keychain (Mirrored)", svg: SVG_KEYCHAIN_3IN_MIRROR }
   };
 
   // A shape's paintable sub-areas are classified by fill lightness: the
@@ -402,6 +508,7 @@
   let layerIdCounter = 0;
   let showGuide = true;
   let currentShapeLabel = "";
+  let currentShapeSvgText = ""; // raw SVG of whatever's loaded now, kept so the rotate button can re-derive from it
   let dragSrcLi = null;
   let viewZoom = 1;            // workspace view zoom/pan only — never touches layer xforms or exports
   let panX = 0, panY = 0;      // workspace pan, in real screen px
@@ -418,6 +525,7 @@
   const imageInput = document.getElementById("imageInput");
   const layerListEl = document.getElementById("layerList");
   const shapeSelect = document.getElementById("shapeSelect");
+  const rotateShapeBtn = document.getElementById("rotateShapeBtn");
   const fitBtn = document.getElementById("fitBtn");
   const removeImgBtn = document.getElementById("removeImgBtn");
   const zoomRange = document.getElementById("zoomRange");
@@ -427,8 +535,7 @@
   const rotLeftBtn = document.getElementById("rotLeftBtn");
   const rotRightBtn = document.getElementById("rotRightBtn");
   const guideCheckbox = document.getElementById("guideCheckbox");
-  const downloadBtn = document.getElementById("downloadBtn");
-  const downloadPngBtn = document.getElementById("downloadPngBtn");
+  const downloadZipBtn = document.getElementById("downloadZipBtn");
 
   // ---- layer helpers ----
   function getSelectedLayer(){
@@ -469,6 +576,8 @@
       alert("Couldn't determine the SVG's size (needs a viewBox or width/height).");
       return;
     }
+
+    currentShapeSvgText = svgText;
 
     // insert a live, offscreen copy so getComputedStyle / getBBox resolve correctly
     const hidden = document.createElement("div");
@@ -532,7 +641,7 @@
       const rect = document.createElementNS(NS, "rect");
       rect.setAttribute("x", 0); rect.setAttribute("y", 0);
       rect.setAttribute("width", w); rect.setAttribute("height", h);
-      regions = [{ axis:null, anchor:0, k:1, clipTemplateEls:[rect] }];
+      regions = [{ kx:1, cx:0, ky:1, cy:0, clipTemplateEls:[rect] }];
       coverageBBoxRect = { x:0, y:0, w, h };
     } else {
       const built = buildRegions(paintable);
@@ -546,49 +655,152 @@
     buildStage();
   }
 
-  // classifies paintable shapes into a flat region (lightest fill) plus one
-  // angled region per non-flat area that sticks out past the flat bbox,
-  // each anchored to the seam it shares with the flat face.
+  // Rotates a background shape's SVG 90° clockwise by rewriting each <rect>'s
+  // geometry directly (rather than wrapping it in a <g transform>) — the bbox
+  // math in parseAndLoadBackground/buildRegions reads raw x/y/width/height,
+  // not the effect of ancestor transforms, so the rotation has to be baked
+  // into the numbers themselves. All built-in shapes are plain <rect>s, so
+  // this covers every shape the rotate button can be used on.
+  function rotateSvgText90(svgText){
+    const doc = new DOMParser().parseFromString(svgText, "image/svg+xml");
+    const rootEl = doc.documentElement;
+    const vbAttr = rootEl.getAttribute("viewBox");
+    const parts = vbAttr.trim().split(/[\s,]+/).map(Number);
+    const [vx, vy, vw, vh] = parts;
+    rootEl.querySelectorAll("rect").forEach((r) => {
+      const x = parseFloat(r.getAttribute("x")) || 0;
+      const y = parseFloat(r.getAttribute("y")) || 0;
+      const w = parseFloat(r.getAttribute("width")) || 0;
+      const h = parseFloat(r.getAttribute("height")) || 0;
+      r.setAttribute("x", y);
+      r.setAttribute("y", vx + vw - x - w);
+      r.setAttribute("width", h);
+      r.setAttribute("height", w);
+    });
+    rootEl.setAttribute("viewBox", `${vy} ${vx} ${vh} ${vw}`);
+    return new XMLSerializer().serializeToString(rootEl);
+  }
+
+  // Turns paintable shapes into "zones" (one per flat shape, plus one per
+  // exposed sliver of each angled shape that sticks out past the flat
+  // shape(s) it sits behind — see the exposed-sliver comment below), then
+  // resolves each zone's image transform by propagating outward, zone to
+  // touching zone, from the single largest flat face.
+  //
+  // This makes multi-hop backgrounds (a main face, its bevel, then a small
+  // keyring tab with its own flat sliver and angled tip) render as one
+  // continuous wrap: each zone's image content picks up exactly where its
+  // neighbor's left off at their shared seam, rather than every flat-tier
+  // zone independently resetting to raw, unshifted image coordinates (which
+  // is only correct for the one zone that's truly the front-facing root).
   function buildRegions(paintable){
     const maxLuminance = Math.max(...paintable.map((p) => p.luminance));
     const flat = paintable.filter((p) => p.luminance >= maxLuminance - 2);
     const angled = paintable.filter((p) => p.luminance < maxLuminance - 2);
 
-    const flatBBox = unionBBox(flat.map((p) => p.bbox));
-    const regions = [{ axis:null, anchor:0, k:1, clipTemplateEls: flat.map((p) => p.clipClone) }];
-    const coverage = { x:flatBBox.x, y:flatBBox.y, x2:flatBBox.x2, y2:flatBBox.y2 };
-    const k = BEND_FACTOR;
+    const flatBBoxes = flat.map((p) => p.bbox);
+    const flatUnion = unionBBox(flatBBoxes);
     const EPS = 0.01;
+    const k = BEND_FACTOR;
+
+    // zone: { bbox, tier, clipEl, kx, cx, ky, cy } — kx/cx/ky/cy resolved below.
+    const zones = flat.map((p) => ({ bbox:p.bbox, tier:'flat', clipEl:p.clipClone }));
 
     angled.forEach(({ bbox }) => {
+      // An angled shape's exposed sliver(s) are computed relative to just
+      // the flat shape(s) it interior-overlaps (it's drawn as a wide rect
+      // sitting behind a narrower flat rect on top) — not every flat shape
+      // in the SVG, so disconnected flat/angled pairs don't distort each
+      // other's sliver geometry.
+      const local = flatBBoxes.filter((fb) =>
+        fb.x < bbox.x2 - EPS && bbox.x < fb.x2 - EPS &&
+        fb.y < bbox.y2 - EPS && bbox.y < fb.y2 - EPS
+      );
+      const flatBBox = local.length ? unionBBox(local) : flatUnion;
+
       if (bbox.x < flatBBox.x - EPS){
-        const rw = flatBBox.x - bbox.x;
-        const anchor = flatBBox.x;
-        regions.push({ axis:'x', anchor, k, clipTemplateEls:[makeRect(bbox.x, bbox.y, rw, bbox.y2-bbox.y)] });
-        coverage.x = Math.min(coverage.x, anchor - rw / k);
+        zones.push({ bbox:{ x:bbox.x, y:bbox.y, x2:flatBBox.x, y2:bbox.y2 }, tier:'angled', clipEl: makeRect(bbox.x, bbox.y, flatBBox.x-bbox.x, bbox.y2-bbox.y) });
       }
       if (bbox.x2 > flatBBox.x2 + EPS){
-        const rw = bbox.x2 - flatBBox.x2;
-        const anchor = flatBBox.x2;
-        regions.push({ axis:'x', anchor, k, clipTemplateEls:[makeRect(flatBBox.x2, bbox.y, rw, bbox.y2-bbox.y)] });
-        coverage.x2 = Math.max(coverage.x2, anchor + rw / k);
+        zones.push({ bbox:{ x:flatBBox.x2, y:bbox.y, x2:bbox.x2, y2:bbox.y2 }, tier:'angled', clipEl: makeRect(flatBBox.x2, bbox.y, bbox.x2-flatBBox.x2, bbox.y2-bbox.y) });
       }
       if (bbox.y < flatBBox.y - EPS){
-        const rh = flatBBox.y - bbox.y;
-        const anchor = flatBBox.y;
-        regions.push({ axis:'y', anchor, k, clipTemplateEls:[makeRect(bbox.x, bbox.y, bbox.x2-bbox.x, rh)] });
-        coverage.y = Math.min(coverage.y, anchor - rh / k);
+        zones.push({ bbox:{ x:bbox.x, y:bbox.y, x2:bbox.x2, y2:flatBBox.y }, tier:'angled', clipEl: makeRect(bbox.x, bbox.y, bbox.x2-bbox.x, flatBBox.y-bbox.y) });
       }
       if (bbox.y2 > flatBBox.y2 + EPS){
-        const rh = bbox.y2 - flatBBox.y2;
-        const anchor = flatBBox.y2;
-        regions.push({ axis:'y', anchor, k, clipTemplateEls:[makeRect(bbox.x, flatBBox.y2, bbox.x2-bbox.x, rh)] });
-        coverage.y2 = Math.max(coverage.y2, anchor + rh / k);
+        zones.push({ bbox:{ x:bbox.x, y:flatBBox.y2, x2:bbox.x2, y2:bbox.y2 }, tier:'angled', clipEl: makeRect(bbox.x, flatBBox.y2, bbox.x2-bbox.x, bbox.y2-flatBBox.y2) });
+      }
+    });
+
+    // Root = the largest flat zone (the primary front-facing face): the only
+    // zone that maps to raw, unshifted image coordinates. Every other zone
+    // (including secondary flat slivers, like a keychain tab's face) is
+    // resolved relative to whatever zone it touches, via breadth-first
+    // propagation, so the whole graph stays one continuous mapping.
+    let root = null, rootArea = -1;
+    zones.forEach((z) => {
+      if (z.tier !== 'flat') return;
+      const area = (z.bbox.x2-z.bbox.x) * (z.bbox.y2-z.bbox.y);
+      if (area > rootArea){ rootArea = area; root = z; }
+    });
+    if (root){ root.kx = 1; root.cx = 0; root.ky = 1; root.cy = 0; }
+
+    function rangesOverlap(a1, a2, b1, b2){ return a1 < b2 - EPS && b1 < a2 - EPS; }
+
+    let progress = true;
+    while (progress){
+      progress = false;
+      zones.forEach((z) => {
+        if (z.kx !== undefined) return;
+        for (const other of zones){
+          if (other === z || other.kx === undefined) continue;
+          const zk = z.tier === 'flat' ? 1 : k;
+          if (rangesOverlap(z.bbox.y, z.bbox.y2, other.bbox.y, other.bbox.y2)){
+            let seam = null;
+            if (Math.abs(z.bbox.x2 - other.bbox.x) < EPS) seam = other.bbox.x;
+            else if (Math.abs(other.bbox.x2 - z.bbox.x) < EPS) seam = other.bbox.x2;
+            if (seam !== null){
+              const imageSeam = (seam - other.cx) / other.kx;
+              z.kx = zk; z.cx = seam - zk*imageSeam;
+              z.ky = other.ky; z.cy = other.cy;
+              progress = true;
+              break;
+            }
+          }
+          if (rangesOverlap(z.bbox.x, z.bbox.x2, other.bbox.x, other.bbox.x2)){
+            let seam = null;
+            if (Math.abs(z.bbox.y2 - other.bbox.y) < EPS) seam = other.bbox.y;
+            else if (Math.abs(other.bbox.y2 - z.bbox.y) < EPS) seam = other.bbox.y2;
+            if (seam !== null){
+              const imageSeam = (seam - other.cy) / other.ky;
+              z.ky = zk; z.cy = seam - zk*imageSeam;
+              z.kx = other.kx; z.cx = other.cx;
+              progress = true;
+              break;
+            }
+          }
+        }
+      });
+    }
+    // any zone that never touched a resolved neighbor (shouldn't happen for
+    // these shapes) falls back to raw image coordinates rather than staying
+    // undefined.
+    zones.forEach((z) => { if (z.kx === undefined){ z.kx = 1; z.cx = 0; z.ky = 1; z.cy = 0; } });
+
+    let coverage = null;
+    zones.forEach((z) => {
+      const x1 = (z.bbox.x - z.cx)/z.kx, x2 = (z.bbox.x2 - z.cx)/z.kx;
+      const y1 = (z.bbox.y - z.cy)/z.ky, y2 = (z.bbox.y2 - z.cy)/z.ky;
+      const zx1 = Math.min(x1,x2), zx2 = Math.max(x1,x2), zy1 = Math.min(y1,y2), zy2 = Math.max(y1,y2);
+      if (!coverage) coverage = { x:zx1, y:zy1, x2:zx2, y2:zy2 };
+      else {
+        coverage.x = Math.min(coverage.x, zx1); coverage.y = Math.min(coverage.y, zy1);
+        coverage.x2 = Math.max(coverage.x2, zx2); coverage.y2 = Math.max(coverage.y2, zy2);
       }
     });
 
     return {
-      regions,
+      regions: zones.map((z) => ({ kx:z.kx, cx:z.cx, ky:z.ky, cy:z.cy, clipTemplateEls:[z.clipEl] })),
       coverageBBoxRect: { x:coverage.x, y:coverage.y, w:coverage.x2-coverage.x, h:coverage.y2-coverage.y }
     };
   }
@@ -627,11 +839,8 @@
   }
 
   function regionTransformString(region){
-    if (!region.axis) return null;
-    const k = region.k, a = region.anchor;
-    return region.axis === 'x'
-      ? `matrix(${k} 0 0 1 ${a*(1-k)} 0)`
-      : `matrix(1 0 0 ${k} 0 ${a*(1-k)})`;
+    if (region.kx === 1 && region.ky === 1 && region.cx === 0 && region.cy === 0) return null;
+    return `matrix(${region.kx} 0 0 ${region.ky} ${region.cx} ${region.cy})`;
   }
 
   // ---- fit / transform helpers ----
@@ -926,8 +1135,7 @@
     rotRange.disabled = !hasSelection;
     rotLeftBtn.disabled = !hasSelection;
     rotRightBtn.disabled = !hasSelection;
-    downloadBtn.disabled = !hasLayers;
-    downloadPngBtn.disabled = !hasLayers;
+    downloadZipBtn.disabled = !hasLayers;
   }
 
   // ---- layer list UI ----
@@ -1068,6 +1276,11 @@
     if (!shape) return;
     currentShapeLabel = shape.label;
     parseAndLoadBackground(shape.svg);
+  });
+
+  rotateShapeBtn.addEventListener("click", () => {
+    if (!currentShapeSvgText) return;
+    parseAndLoadBackground(rotateSvgText90(currentShapeSvgText));
   });
 
   // ---- events: controls ----
@@ -1311,63 +1524,174 @@
     setTimeout(() => URL.revokeObjectURL(url), 3000);
   }
 
-  // ---- export: clipped JPG (what shows through the shape) ----
-  function exportJPG(){
-    if (!layers.length || !bg){
-      alert("Add at least one image layer first.");
-      return;
-    }
-    downloadBtn.disabled = true;
-    downloadBtn.textContent = "Preparing…";
+  function rasterizeSvgToBlobAsync(outSvg, canvasW, canvasH, opts){
+    return new Promise((resolve, reject) => {
+      rasterizeSvgToBlob(outSvg, canvasW, canvasH, opts, (blob, err) => {
+        if (err) reject(new Error(err)); else resolve(blob);
+      });
+    });
+  }
 
+  // ---- build: clipped JPG mockup (what shows through the shape) ----
+  function buildMockupJpgBlob(){
     const outSvg = buildClippedLayersSvg();
     const longSide = Math.max(bg.w, bg.h);
     const exportScale = Math.max(1, Math.min(8, Math.round(2400 / longSide)));
     const canvasW = Math.max(1, Math.round(bg.w * exportScale));
     const canvasH = Math.max(1, Math.round(bg.h * exportScale));
-
-    rasterizeSvgToBlob(outSvg, canvasW, canvasH, { background:"#ffffff", mime:"image/jpeg", quality:0.75 }, (blob, err) => {
-      if (err){ alert(err); resetDownloadBtn(); return; }
-      triggerDownload(blob, buildExportFilename("jpg"));
-      resetDownloadBtn();
-    });
+    return rasterizeSvgToBlobAsync(outSvg, canvasW, canvasH, { background:"#ffffff", mime:"image/jpeg", quality:0.75 });
   }
 
-  function resetDownloadBtn(){
-    downloadBtn.disabled = layers.length === 0;
-    downloadBtn.textContent = "Download JPG";
-  }
-
-  // ---- export: full, unclipped layer stack as PNG, extended to cover every layer ----
-  function exportFullLayersPNG(){
-    if (!layers.length || !bg){
-      alert("Add at least one image layer first.");
-      return;
-    }
-    downloadPngBtn.disabled = true;
-    downloadPngBtn.textContent = "Preparing…";
-
+  // ---- build: full, unclipped layer stack as PNG, extended to cover every layer ----
+  function buildFullLayersPngBlob(){
     const bounds = computeFullLayersBounds();
     const outSvg = buildFullLayersSvg(bounds);
     const longSide = Math.max(bounds.w, bounds.h);
     const exportScale = Math.max(1, Math.min(8, Math.round(3000 / longSide)));
     const canvasW = Math.max(1, Math.round(bounds.w * exportScale));
     const canvasH = Math.max(1, Math.round(bounds.h * exportScale));
-
-    rasterizeSvgToBlob(outSvg, canvasW, canvasH, { background:null, mime:"image/png" }, (blob, err) => {
-      if (err){ alert(err); resetDownloadPngBtn(); return; }
-      triggerDownload(blob, buildExportFilename("png", "full-layers"));
-      resetDownloadPngBtn();
-    });
+    return rasterizeSvgToBlobAsync(outSvg, canvasW, canvasH, { background:null, mime:"image/png" });
   }
 
-  function resetDownloadPngBtn(){
-    downloadPngBtn.disabled = layers.length === 0;
-    downloadPngBtn.textContent = "Download Full Layers (PNG)";
+  function sanitizeFilename(name){
+    return (name || "image").replace(/[\\/:*?"<>|]+/g, "_");
   }
 
-  downloadBtn.addEventListener("click", exportJPG);
-  downloadPngBtn.addEventListener("click", exportFullLayersPNG);
+  // ---- zip: minimal STORE/DEFLATE writer (no external library) ----
+  const CRC_TABLE = (() => {
+    const table = new Uint32Array(256);
+    for (let n = 0; n < 256; n++){
+      let c = n;
+      for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      table[n] = c >>> 0;
+    }
+    return table;
+  })();
+
+  function crc32(bytes){
+    let crc = 0xFFFFFFFF;
+    for (let i = 0; i < bytes.length; i++) crc = CRC_TABLE[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  // Real (deflate) compression via the browser's built-in CompressionStream,
+  // so the zip doesn't need a bundled deflate implementation. Falls back to
+  // null (caller stores the entry uncompressed) on browsers without it.
+  async function deflateRaw(bytes){
+    if (typeof CompressionStream === "undefined") return null;
+    const cs = new CompressionStream("deflate-raw");
+    const writer = cs.writable.getWriter();
+    writer.write(bytes);
+    writer.close();
+    const compressed = await new Response(cs.readable).arrayBuffer();
+    return new Uint8Array(compressed);
+  }
+
+  function dosDateTime(date){
+    const dosTime = ((date.getHours() & 0x1f) << 11) | ((date.getMinutes() & 0x3f) << 5) | ((date.getSeconds() >> 1) & 0x1f);
+    const dosDate = (((date.getFullYear()-1980) & 0x7f) << 9) | (((date.getMonth()+1) & 0xf) << 5) | (date.getDate() & 0x1f);
+    return { dosTime, dosDate };
+  }
+
+  // files: [{ name, blob }] — builds a standard zip, deflating each entry at
+  // the browser's default (high) compression level when available.
+  async function buildZipBlob(files){
+    const encoder = new TextEncoder();
+    const { dosTime, dosDate } = dosDateTime(new Date());
+    const localParts = [];
+    const centralParts = [];
+    let offset = 0;
+
+    for (const file of files){
+      const rawBuf = new Uint8Array(await file.blob.arrayBuffer());
+      const crc = crc32(rawBuf);
+      const deflated = await deflateRaw(rawBuf);
+      const useDeflate = deflated && deflated.length < rawBuf.length;
+      const method = useDeflate ? 8 : 0;
+      const data = useDeflate ? deflated : rawBuf;
+      const nameBytes = encoder.encode(file.name);
+
+      const localHeader = new DataView(new ArrayBuffer(30));
+      localHeader.setUint32(0, 0x04034b50, true);
+      localHeader.setUint16(4, 20, true);
+      localHeader.setUint16(6, 0x0800, true);
+      localHeader.setUint16(8, method, true);
+      localHeader.setUint16(10, dosTime, true);
+      localHeader.setUint16(12, dosDate, true);
+      localHeader.setUint32(14, crc, true);
+      localHeader.setUint32(18, data.length, true);
+      localHeader.setUint32(22, rawBuf.length, true);
+      localHeader.setUint16(26, nameBytes.length, true);
+      localHeader.setUint16(28, 0, true);
+      localParts.push(new Uint8Array(localHeader.buffer), nameBytes, data);
+
+      const centralHeader = new DataView(new ArrayBuffer(46));
+      centralHeader.setUint32(0, 0x02014b50, true);
+      centralHeader.setUint16(4, 20, true);
+      centralHeader.setUint16(6, 20, true);
+      centralHeader.setUint16(8, 0x0800, true);
+      centralHeader.setUint16(10, method, true);
+      centralHeader.setUint16(12, dosTime, true);
+      centralHeader.setUint16(14, dosDate, true);
+      centralHeader.setUint32(16, crc, true);
+      centralHeader.setUint32(20, data.length, true);
+      centralHeader.setUint32(24, rawBuf.length, true);
+      centralHeader.setUint16(28, nameBytes.length, true);
+      centralHeader.setUint16(30, 0, true);
+      centralHeader.setUint16(32, 0, true);
+      centralHeader.setUint16(34, 0, true);
+      centralHeader.setUint16(36, 0, true);
+      centralHeader.setUint32(38, 0, true);
+      centralHeader.setUint32(42, offset, true);
+      centralParts.push(new Uint8Array(centralHeader.buffer), nameBytes);
+
+      offset += 30 + nameBytes.length + data.length;
+    }
+
+    const centralStart = offset;
+    const centralSize = centralParts.reduce((sum, p) => sum + p.length, 0);
+
+    const eocd = new DataView(new ArrayBuffer(22));
+    eocd.setUint32(0, 0x06054b50, true);
+    eocd.setUint16(8, files.length, true);
+    eocd.setUint16(10, files.length, true);
+    eocd.setUint32(12, centralSize, true);
+    eocd.setUint32(16, centralStart, true);
+
+    return new Blob([...localParts, ...centralParts, new Uint8Array(eocd.buffer)], { type:"application/zip" });
+  }
+
+  // ---- export: zip of original images + JPG mockup + full-layers PNG ----
+  async function exportZip(){
+    if (!layers.length || !bg){
+      alert("Add at least one image layer first.");
+      return;
+    }
+    downloadZipBtn.disabled = true;
+    downloadZipBtn.textContent = "Preparing…";
+
+    try{
+      const files = [];
+      for (let i = 0; i < layers.length; i++){
+        const layer = layers[i];
+        const blob = await fetch(layer.dataURL).then((r) => r.blob());
+        files.push({ name: `original-images/${i+1}-${sanitizeFilename(layer.name)}`, blob });
+      }
+      const [jpgBlob, pngBlob] = await Promise.all([buildMockupJpgBlob(), buildFullLayersPngBlob()]);
+      files.push({ name: buildExportFilename("jpg"), blob: jpgBlob });
+      files.push({ name: buildExportFilename("png", "full-layers"), blob: pngBlob });
+
+      const zipBlob = await buildZipBlob(files);
+      triggerDownload(zipBlob, buildExportFilename("zip"));
+    }catch(e){
+      alert((e && e.message) ? e.message : "Export failed. Try different photos.");
+    }finally{
+      downloadZipBtn.disabled = layers.length === 0;
+      downloadZipBtn.textContent = "Download ZIP";
+    }
+  }
+
+  downloadZipBtn.addEventListener("click", exportZip);
 
   // ---- init ----
   shapeSelect.value = "rail2";
