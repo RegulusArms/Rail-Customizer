@@ -1469,10 +1469,6 @@
     outSvg.setAttribute("width", bounds.w);
     outSvg.setAttribute("height", bounds.h);
 
-    const bgGroup = document.createElementNS(NS, "g");
-    bg.bgClones.forEach((c) => bgGroup.appendChild(c.cloneNode(true)));
-    outSvg.appendChild(bgGroup);
-
     layers.forEach((layer) => outSvg.appendChild(buildLayerGroup(layer)));
 
     return outSvg;
