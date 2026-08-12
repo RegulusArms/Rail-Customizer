@@ -73,6 +73,36 @@
     font-size:12.5px;
     width:100%;
   }
+  .dropzone{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:4px;
+    text-align:center;
+    padding:22px 12px;
+    border:2px dashed var(--panel-border);
+    border-radius:10px;
+    background:#fafbfc;
+    color:var(--muted);
+    font-size:12.5px;
+    cursor:pointer;
+    transition:background .12s ease, border-color .12s ease;
+  }
+  .dropzone:hover{background:#f2f3f5;}
+  .dropzone.dragover{
+    background:#eaf1fe;
+    border-color:var(--accent);
+    color:var(--text);
+  }
+  .dropzone .dz-title{
+    font-weight:600;
+    color:var(--text);
+    font-size:13px;
+  }
+  .dropzone input[type="file"]{
+    display:none;
+  }
   .btn{
     display:inline-flex;
     align-items:center;
@@ -258,8 +288,12 @@
     <p class="sub">Upload one or more images, then drag to move, use the corner handles to resize, and the top handle (or shift + scroll, or the [ ] keys) to rotate. The image shows normally on the flat face and wraps at a 45&deg; angle down the beveled edges. Reorder layers by dragging them in the list below.</p>
 
     <div class="field">
-      <label for="imageInput">Add image layer</label>
-      <input type="file" id="imageInput" accept="image/*" multiple>
+      <label>Add image layer</label>
+      <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Drag and drop images here, or click to browse">
+        <span class="dz-title">Drag &amp; drop images here</span>
+        <span>or click to browse — multiple images each become their own layer</span>
+        <input type="file" id="imageInput" accept="image/*" multiple>
+      </div>
     </div>
 
     <div class="field">
@@ -523,6 +557,7 @@
   const viewZoomLabel = document.getElementById("viewZoomLabel");
   const handleLayer = document.getElementById("handleLayer");
   const imageInput = document.getElementById("imageInput");
+  const dropzone = document.getElementById("dropzone");
   const layerListEl = document.getElementById("layerList");
   const shapeSelect = document.getElementById("shapeSelect");
   const rotateShapeBtn = document.getElementById("rotateShapeBtn");
@@ -1233,9 +1268,9 @@
     updateControlsEnabled();
   }
 
-  // ---- events: image upload (adds one layer per selected file) ----
-  imageInput.addEventListener("change", (e) => {
-    const files = Array.from(e.target.files || []);
+  // ---- events: image upload (adds one layer per selected/dropped file) ----
+  function addImageFiles(fileList){
+    const files = Array.from(fileList || []).filter((f) => f.type.startsWith("image/"));
     if (!files.length) return;
     files.forEach((file) => {
       const reader = new FileReader();
@@ -1267,7 +1302,40 @@
       reader.onerror = () => alert("Couldn't read " + (file.name || "that file") + ".");
       reader.readAsDataURL(file);
     });
+  }
+
+  imageInput.addEventListener("change", (e) => {
+    addImageFiles(e.target.files);
     imageInput.value = "";
+  });
+
+  dropzone.addEventListener("click", () => imageInput.click());
+  dropzone.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " "){
+      e.preventDefault();
+      imageInput.click();
+    }
+  });
+
+  ["dragenter", "dragover"].forEach((evtName) => {
+    dropzone.addEventListener(evtName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.add("dragover");
+    });
+  });
+  ["dragleave", "dragend"].forEach((evtName) => {
+    dropzone.addEventListener(evtName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.remove("dragover");
+    });
+  });
+  dropzone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropzone.classList.remove("dragover");
+    addImageFiles(e.dataTransfer && e.dataTransfer.files);
   });
 
   // ---- events: shape select (built-in shapes) ----
