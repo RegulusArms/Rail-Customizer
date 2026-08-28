@@ -26,8 +26,9 @@
   }
   .app{
     display:flex;
-    min-height:100vh;
+    height:100vh;
     align-items:stretch;
+    overflow:hidden;
   }
   .panel{
     width:300px;
@@ -36,6 +37,7 @@
     border-right:1px solid var(--panel-border);
     padding:20px 18px;
     overflow-y:auto;
+    min-height:0;
   }
   .panel h1{
     font-size:17px;
@@ -180,6 +182,32 @@
     text-align:right;
     flex:0 0 auto;
   }
+  .cmyk-inputs{
+    display:flex;
+    gap:6px;
+    margin-top:8px;
+  }
+  .cmyk-inputs .cmyk-input-field{
+    flex:1 1 0;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+  }
+  .cmyk-inputs label{
+    font-size:11px;
+    font-weight:600;
+    color:var(--muted);
+    text-align:center;
+  }
+  .cmyk-inputs input[type="number"]{
+    width:100%;
+    padding:5px 4px;
+    font-size:12px;
+    text-align:center;
+    border-radius:6px;
+    border:1px solid var(--panel-border);
+    font-family:inherit;
+  }
   .color-swatch{
     width:24px;
     height:24px;
@@ -293,13 +321,10 @@
     padding:30px;
     gap:14px;
   }
-  .stage-zoom{
-    transform-origin:50% 50%;
-  }
   .stage-container{
     position:relative;
-    height:min(82vh, 720px);
-    aspect-ratio:73 / 145;
+    height:80vh;
+    width:100%;
     border-radius:10px;
     overflow:hidden;
     box-shadow:0 1px 3px rgba(0,0,0,.12), 0 8px 24px rgba(0,0,0,.08);
@@ -364,9 +389,9 @@
     max-width:420px;
   }
   @media (max-width:760px){
-    .app{flex-direction:column;}
-    .panel{width:auto;flex:none;border-right:none;border-bottom:1px solid var(--panel-border);}
-    .stage-container{height:min(60vh, 560px);}
+    .app{flex-direction:column;height:auto;min-height:100vh;overflow:visible;}
+    .panel{width:auto;flex:none;border-right:none;border-bottom:1px solid var(--panel-border);overflow-y:visible;max-height:none;}
+    .stage-container{height:80vh;}
   }
 </style>
 </head>
@@ -410,6 +435,10 @@
     <div class="btn-row" style="margin-bottom:18px;">
       <button class="btn" id="fitBtn" disabled>Fit to shape</button>
       <button class="btn" id="removeImgBtn" disabled>Remove layer</button>
+    </div>
+
+    <div id="imageFieldsGroup" style="display:none;margin-bottom:18px;">
+      <button class="btn" id="resetImageSizeBtn" style="width:100%;">Reset size &amp; aspect ratio</button>
     </div>
 
     <div class="field">
@@ -474,6 +503,24 @@
           <input type="range" id="cmykK" min="0" max="100" value="100" step="1">
           <span class="val" id="cmykKVal">100%</span>
         </div>
+        <div class="cmyk-inputs">
+          <div class="cmyk-input-field">
+            <label for="cmykCInput">C</label>
+            <input type="number" id="cmykCInput" min="0" max="100" step="1" value="0">
+          </div>
+          <div class="cmyk-input-field">
+            <label for="cmykMInput">M</label>
+            <input type="number" id="cmykMInput" min="0" max="100" step="1" value="0">
+          </div>
+          <div class="cmyk-input-field">
+            <label for="cmykYInput">Y</label>
+            <input type="number" id="cmykYInput" min="0" max="100" step="1" value="0">
+          </div>
+          <div class="cmyk-input-field">
+            <label for="cmykKInput">K</label>
+            <input type="number" id="cmykKInput" min="0" max="100" step="1" value="100">
+          </div>
+        </div>
         <div class="row" style="margin-top:8px;">
           <span style="font-size:12px;color:var(--muted);">Preview</span>
           <span class="color-swatch" id="colorSwatch"></span>
@@ -521,25 +568,34 @@
 
     <hr class="sep">
 
-    <button class="btn btn-primary" id="downloadZipBtn" disabled title="A zip containing your original uploaded images, a mockup JPG of the rail cover with the 45° wrap, and a full quality flat (unwrapped) PNG of your layers">Download ZIP</button>
+    <button class="btn btn-primary" id="downloadZipBtn" disabled title="Downloads a zip containing a mockup JPG of the rail cover with the 45° wrap, a full quality flat (unwrapped) PNG of your layers, a PNG of each individual layer, a project.xml with every layer's position/size/stacking data, and your original uploaded images — this zip can be re-loaded with &quot;Load project ZIP&quot; below">Download ZIP</button>
     <p class="download-note">Download the zip for each rail cover, then email it to ross@regulusarms.com with your GunBroker order number as the subject line.</p>
+
+    <hr class="sep">
+
+    <div class="field">
+      <label for="projectZipInput">Load project ZIP</label>
+      <div class="dropzone" id="projectZipDropzone" tabindex="0" role="button" aria-label="Drop a project zip here or click to browse">
+        <span class="dz-title">Drag &amp; drop an exported project .zip here</span>
+        <span>or click to browse — re-creates the layers, positions, and background shape exactly as exported</span>
+        <input type="file" id="projectZipInput" accept=".zip,application/zip">
+      </div>
+    </div>
   </aside>
 
   <main class="stage-wrap" id="stageWrap">
-    <div class="stage-zoom" id="stageZoomWrap">
-      <div class="stage-container" id="stageContainer">
-        <svg id="stage" xmlns="http://www.w3.org/2000/svg"></svg>
-        <div class="handle-layer" id="handleLayer">
-          <div class="handle corner" id="handle-tl" style="cursor:nwse-resize;"></div>
-          <div class="handle corner" id="handle-tr" style="cursor:nesw-resize;"></div>
-          <div class="handle corner" id="handle-br" style="cursor:nwse-resize;"></div>
-          <div class="handle corner" id="handle-bl" style="cursor:nesw-resize;"></div>
-          <div class="handle edge edge-v" id="handle-top" title="Stretch" style="cursor:ns-resize;"></div>
-          <div class="handle edge edge-v" id="handle-bottom" title="Stretch" style="cursor:ns-resize;"></div>
-          <div class="handle edge edge-h" id="handle-left" title="Stretch" style="cursor:ew-resize;"></div>
-          <div class="handle edge edge-h" id="handle-right" title="Stretch" style="cursor:ew-resize;"></div>
-          <div class="handle rotate" id="handle-rotate" title="Rotate"></div>
-        </div>
+    <div class="stage-container" id="stageContainer">
+      <svg id="stage" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="handle-layer" id="handleLayer">
+        <div class="handle corner" id="handle-tl" style="cursor:nwse-resize;"></div>
+        <div class="handle corner" id="handle-tr" style="cursor:nesw-resize;"></div>
+        <div class="handle corner" id="handle-br" style="cursor:nwse-resize;"></div>
+        <div class="handle corner" id="handle-bl" style="cursor:nesw-resize;"></div>
+        <div class="handle edge edge-v" id="handle-top" title="Stretch" style="cursor:ns-resize;"></div>
+        <div class="handle edge edge-v" id="handle-bottom" title="Stretch" style="cursor:ns-resize;"></div>
+        <div class="handle edge edge-h" id="handle-left" title="Stretch" style="cursor:ew-resize;"></div>
+        <div class="handle edge edge-h" id="handle-right" title="Stretch" style="cursor:ew-resize;"></div>
+        <div class="handle rotate" id="handle-rotate" title="Rotate"></div>
       </div>
     </div>
     <p class="hint">Drag inside the outline to move it, drag a corner to resize. Rotate by dragging the blue dot above it, holding shift while scrolling over the image, or pressing the [ and ] keys.</p>
@@ -547,6 +603,7 @@
   </main>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script>
 (function(){
   "use strict";
@@ -753,28 +810,34 @@
   let showGuide = true;
   let currentShapeLabel = "";
   let currentShapeSvgText = ""; // raw SVG of whatever's loaded now, kept so the rotate button can re-derive from it
+  let currentShapeKey = "rail2"; // BUILTIN_SHAPES key currently loaded, kept for project export/import
+  let currentShapeRotations = 0; // how many 90° rotate-button clicks have been applied, mod 4 — kept for project export/import
   let dragSrcLi = null;
   let viewZoom = 1;            // workspace view zoom/pan only — never touches layer xforms or exports
   let panX = 0, panY = 0;      // workspace pan, in real screen px
-  const VIEW_ZOOM_MIN = 0.4;
-  const VIEW_ZOOM_MAX = 5;
-  let customFonts = {};        // familyName -> data URL
+  const VIEW_ZOOM_MIN = 0.15;
+  const VIEW_ZOOM_MAX = 10;
+  let customFonts = {};        // familyName -> array of {dataURL, unicodeRange}
   let customFontCounter = 0;
+  let customFontLabels = {};   // familyName -> display label, for uploaded (non-Google) fonts only
 
   // ---- dom refs ----
   const stage = document.getElementById("stage");
   const stageWrap = document.getElementById("stageWrap");
   const stageContainer = document.getElementById("stageContainer");
-  const stageZoomWrap = document.getElementById("stageZoomWrap");
   const viewZoomLabel = document.getElementById("viewZoomLabel");
   const handleLayer = document.getElementById("handleLayer");
   const imageInput = document.getElementById("imageInput");
   const dropzone = document.getElementById("dropzone");
+  const projectZipInput = document.getElementById("projectZipInput");
+  const projectZipDropzone = document.getElementById("projectZipDropzone");
   const layerListEl = document.getElementById("layerList");
   const shapeSelect = document.getElementById("shapeSelect");
   const rotateShapeBtn = document.getElementById("rotateShapeBtn");
   const fitBtn = document.getElementById("fitBtn");
   const removeImgBtn = document.getElementById("removeImgBtn");
+  const imageFieldsGroup = document.getElementById("imageFieldsGroup");
+  const resetImageSizeBtn = document.getElementById("resetImageSizeBtn");
   const zoomRange = document.getElementById("zoomRange");
   const zoomLabel = document.getElementById("zoomLabel");
   const rotRange = document.getElementById("rotRange");
@@ -795,6 +858,10 @@
   const colorWheelDot = document.getElementById("colorWheelDot");
   const cmykK = document.getElementById("cmykK");
   const cmykKVal = document.getElementById("cmykKVal");
+  const cmykCInput = document.getElementById("cmykCInput");
+  const cmykMInput = document.getElementById("cmykMInput");
+  const cmykYInput = document.getElementById("cmykYInput");
+  const cmykKInput = document.getElementById("cmykKInput");
   const colorSwatch = document.getElementById("colorSwatch");
   const cmykReadout = document.getElementById("cmykReadout");
   const opacityRange = document.getElementById("opacityRange");
@@ -874,7 +941,40 @@
     const c = Math.round(layer.color.c), m = Math.round(layer.color.m), y = Math.round(layer.color.y), k = Math.round(layer.color.k);
     cmykReadout.textContent = `C${c} M${m} Y${y} K${k}`;
     colorSwatch.style.background = layer.fillColor;
+    if (document.activeElement !== cmykCInput) cmykCInput.value = c;
+    if (document.activeElement !== cmykMInput) cmykMInput.value = m;
+    if (document.activeElement !== cmykYInput) cmykYInput.value = y;
+    if (document.activeElement !== cmykKInput) cmykKInput.value = k;
   }
+
+  // ---- CMYK number inputs: typing exact C/M/Y/K values ----
+  function applyCmykFromInputs(){
+    const selected = getSelectedLayer();
+    if (!isColorableLayer(selected)) return;
+    const clamp = (v) => Math.max(0, Math.min(100, isNaN(v) ? 0 : v));
+    const c = clamp(parseFloat(cmykCInput.value));
+    const m = clamp(parseFloat(cmykMInput.value));
+    const y = clamp(parseFloat(cmykYInput.value));
+    const k = clamp(parseFloat(cmykKInput.value));
+    selected.color = { c, m, y, k };
+    selected.fillColor = cmykToHex(c, m, y, k);
+    const rgb = { r: 1 - c/100, g: 1 - m/100, b: 1 - y/100 };
+    const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+    positionWheelDot(hsv.h, hsv.s);
+    cmykK.value = k;
+    cmykKVal.textContent = k + "%";
+    updateColorReadout(selected);
+    buildStage();
+  }
+
+  [cmykCInput, cmykMInput, cmykYInput, cmykKInput].forEach((input) => {
+    input.addEventListener("input", applyCmykFromInputs);
+    input.addEventListener("change", () => {
+      const clamp = (v) => Math.max(0, Math.min(100, isNaN(v) ? 0 : v));
+      input.value = clamp(parseFloat(input.value));
+      applyCmykFromInputs();
+    });
+  });
 
   function setColorFromWheel(hue, sat){
     const selected = getSelectedLayer();
@@ -1009,6 +1109,15 @@
   }
 
   // ---- custom font handling ----
+  // renders all @font-face rules for a family: Google Fonts subset into several faces
+  // (one per unicode-range, e.g. latin/latin-ext/cyrillic), each of which must be kept
+  // separate — collapsing them to one file drops glyphs outside that file's subset.
+  function fontFaceRulesFor(name){
+    return customFonts[name].map((face) =>
+      `@font-face{font-family:"${name}";src:url(${face.dataURL});${face.unicodeRange ? `unicode-range:${face.unicodeRange};` : ""}}`
+    ).join("\n");
+  }
+
   function injectFontFaceStyle(){
     let styleEl = document.getElementById("customFontFaceStyle");
     if (!styleEl){
@@ -1016,9 +1125,7 @@
       styleEl.id = "customFontFaceStyle";
       document.head.appendChild(styleEl);
     }
-    styleEl.textContent = Object.keys(customFonts).map((name) =>
-      `@font-face{font-family:"${name}";src:url(${customFonts[name]});}`
-    ).join("\n");
+    styleEl.textContent = Object.keys(customFonts).map(fontFaceRulesFor).join("\n");
   }
 
   // builds an SVG <style> with the same @font-face rules so exported/rasterized SVGs
@@ -1027,18 +1134,22 @@
     const names = Object.keys(customFonts);
     if (!names.length) return null;
     const styleEl = document.createElementNS(NS, "style");
-    styleEl.textContent = names.map((name) =>
-      `@font-face{font-family:"${name}";src:url(${customFonts[name]});}`
-    ).join("\n");
+    styleEl.textContent = names.map(fontFaceRulesFor).join("\n");
     return styleEl;
   }
 
   function registerCustomFont(familyName, dataURL){
-    customFonts[familyName] = dataURL;
+    customFonts[familyName] = [{ dataURL, unicodeRange: null }];
+    injectFontFaceStyle();
+  }
+
+  function registerCustomFontFaces(familyName, faces){
+    customFonts[familyName] = faces;
     injectFontFaceStyle();
   }
 
   function addCustomFontOption(value, label){
+    customFontLabels[value] = label;
     const opt = document.createElement("option");
     opt.value = value;
     opt.textContent = label;
@@ -1057,30 +1168,42 @@
   // the <link> stylesheet in <head> covers the live editor, but exported/rasterized SVGs
   // are rendered in an isolated context that can't see page stylesheets — only fonts baked
   // into the SVG's own @font-face (via customFonts) survive export, same as uploaded fonts.
-  function fetchGoogleFontDataURI(family){
+  // Google's CSS2 API returns one @font-face block per unicode-range subset (latin,
+  // latin-ext, cyrillic, vietnamese, ...). Grabbing only the first block's font file
+  // means only that subset's glyphs render correctly in exports — any other character
+  // silently falls back to a generic font, e.g. every letter after the first. Fetch
+  // every subset instead.
+  function fetchGoogleFontFaces(family){
     const q = encodeURIComponent(family).replace(/%20/g, "+");
     return fetch(`https://fonts.googleapis.com/css2?family=${q}&display=swap`)
       .then((r) => r.text())
       .then((cssText) => {
-        const match = cssText.match(/src:\s*url\(([^)]+)\)\s*format\('woff2'\)/) || cssText.match(/src:\s*url\(([^)]+)\)/);
-        if (!match) throw new Error("No font file URL found for " + family);
-        return fetch(match[1]).then((r) => r.blob());
-      })
-      .then((blob) => new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      }));
+        const blocks = cssText.match(/@font-face\s*{[^}]*}/g) || [];
+        const faces = blocks.map((block) => {
+          const urlMatch = block.match(/src:\s*url\(([^)]+)\)\s*format\('woff2'\)/) || block.match(/src:\s*url\(([^)]+)\)/);
+          if (!urlMatch) return null;
+          const rangeMatch = block.match(/unicode-range:\s*([^;]+);/);
+          return { url: urlMatch[1], unicodeRange: rangeMatch ? rangeMatch[1].trim() : null };
+        }).filter(Boolean);
+        if (!faces.length) throw new Error("No font file URL found for " + family);
+        return Promise.all(faces.map((face) =>
+          fetch(face.url).then((r) => r.blob()).then((blob) => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve({ unicodeRange: face.unicodeRange, dataURL: reader.result });
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          }))
+        ));
+      });
   }
 
   const googleFontEmbedPromises = {};
   function ensureGoogleFontEmbedded(familyName){
     if (customFonts[familyName]) return Promise.resolve();
     if (googleFontEmbedPromises[familyName]) return googleFontEmbedPromises[familyName];
-    const p = fetchGoogleFontDataURI(familyName)
-      .then((dataURL) => {
-        registerCustomFont(familyName, dataURL);
+    const p = fetchGoogleFontFaces(familyName)
+      .then((faces) => {
+        registerCustomFontFaces(familyName, faces);
         let changed = false;
         layers.forEach((l) => {
           if (l.type === "text" && l.fontFamily.indexOf(`"${familyName}"`) !== -1){
@@ -1199,9 +1322,9 @@
     }
 
     bg = { w, h, viewBox: vb, bgClones, regions, coverageBBoxRect };
-    stageContainer.style.aspectRatio = w + " / " + h;
 
     buildStage();
+    setInitialView();
   }
 
   // Rotates a background shape's SVG 90° clockwise by rewriting each <rect>'s
@@ -1536,10 +1659,9 @@
     if (!ctm) return { x:0, y:0 };
     const screenPt = pt.matrixTransform(ctm);
     const rect = stageContainer.getBoundingClientRect();
-    // rect is in real (post view-zoom) screen pixels, but the handle elements
-    // are positioned in stageContainer's own local CSS px, which the
-    // stage-zoom wrapper's transform re-scales on paint — so divide it back out.
-    return { x: (screenPt.x - rect.left) / viewZoom, y: (screenPt.y - rect.top) / viewZoom };
+    // stageContainer itself is never transformed (only #stage's content zooms/pans
+    // inside it), so the handle-layer siblings can use this real screen offset directly.
+    return { x: screenPt.x - rect.left, y: screenPt.y - rect.top };
   }
 
   // ---- handles ----
@@ -1566,8 +1688,9 @@
     placeHandle("handle-bl", corners.bl);
     placeHandle("handle-rotate", rotStage);
 
-    // stretch/smoosh (non-uniform resize) handles — shapes only
-    const canStretch = selected.type === "shape";
+    // stretch/smoosh (non-uniform resize) handles — shapes and images (images already
+    // render with preserveAspectRatio="none", so independent w/h "just works")
+    const canStretch = selected.type === "shape" || selected.type === "image";
     ["handle-top","handle-bottom","handle-left","handle-right"].forEach((id) => {
       document.getElementById(id).style.display = canStretch ? "block" : "none";
     });
@@ -1675,17 +1798,18 @@
   }
   ["handle-tl","handle-tr","handle-br","handle-bl"].forEach(attachCornerHandle);
 
-  // ---- dragging: stretch/smoosh a single side (non-uniform resize, shape layers only) ----
-  // moving one edge grows/shrinks that dimension by the pointer's movement along that edge's
-  // local axis, while the opposite edge stays put — the layer's center shifts by half the
-  // change to keep the fixed edge fixed, matching typical "resize handle" behavior.
+  // ---- dragging: stretch/smoosh a single side (non-uniform resize, shape and image ----
+  // layers) ---- moving one edge grows/shrinks that dimension by the pointer's movement
+  // along that edge's local axis, while the opposite edge stays put — the layer's center
+  // shifts by half the change to keep the fixed edge fixed, matching typical "resize
+  // handle" behavior.
   const MIN_SHAPE_SIZE = 4;
   function attachEdgeHandle(id, dim, sign){
     const el = document.getElementById(id);
     el.addEventListener("pointerdown", (e) => {
       if (e.button !== 0) return; // let middle-click bubble up to workspace panning
       const selected = getSelectedLayer();
-      if (!selected || selected.type !== "shape") return;
+      if (!selected || (selected.type !== "shape" && selected.type !== "image")) return;
       e.preventDefault();
       e.stopPropagation();
       const start = stagePointFromEvent(e);
@@ -1878,9 +2002,11 @@
   }
 
   function removeLayer(id){
+    const removedIndex = layers.findIndex((l) => l.id === id);
     layers = layers.filter((l) => l.id !== id);
     if (selectedLayerId === id){
-      selectedLayerId = layers.length ? layers[layers.length - 1].id : null;
+      const nextIndex = Math.min(removedIndex, layers.length - 1);
+      selectedLayerId = nextIndex >= 0 ? layers[nextIndex].id : null;
     }
     renderLayerList();
     buildStage();
@@ -1935,6 +2061,13 @@
 
     syncColorControls();
     syncOpacityControl();
+    syncImageControls();
+  }
+
+  function syncImageControls(){
+    const selected = getSelectedLayer();
+    const isImage = !!selected && selected.type === "image";
+    imageFieldsGroup.style.display = isImage ? "" : "none";
   }
 
   function addTextLayer(){
@@ -2008,6 +2141,8 @@
             name: file.name || ("Layer " + layerIdCounter),
             naturalW: tmp.naturalWidth || 300,
             naturalH: tmp.naturalHeight || 300,
+            origNaturalW: tmp.naturalWidth || 300,
+            origNaturalH: tmp.naturalHeight || 300,
             dataURL,
             opacity: 100,
             xform: { cx:0, cy:0, scale:1, rot:0 },
@@ -2063,6 +2198,14 @@
     e.stopPropagation();
     dropzone.classList.remove("dragover");
     addImageFiles(e.dataTransfer && e.dataTransfer.files);
+  });
+
+  resetImageSizeBtn.addEventListener("click", () => {
+    const layer = getSelectedLayer();
+    if (!layer || layer.type !== "image" || layer.origNaturalW == null) return;
+    layer.naturalW = layer.origNaturalW;
+    layer.naturalH = layer.origNaturalH;
+    buildStage();
   });
 
   // ---- events: text layers ----
@@ -2190,12 +2333,15 @@
   shapeSelect.addEventListener("change", () => {
     const shape = BUILTIN_SHAPES[shapeSelect.value];
     if (!shape) return;
+    currentShapeKey = shapeSelect.value;
+    currentShapeRotations = 0;
     currentShapeLabel = shape.label;
     parseAndLoadBackground(shape.svg);
   });
 
   rotateShapeBtn.addEventListener("click", () => {
     if (!currentShapeSvgText) return;
+    currentShapeRotations = (currentShapeRotations + 1) % 4;
     parseAndLoadBackground(rotateSvgText90(currentShapeSvgText));
   });
 
@@ -2253,30 +2399,45 @@
   });
 
   // ---- workspace view zoom + pan ----
-  // These only affect how the workspace is displayed (a CSS transform on the
-  // wrapper around stageContainer) — they never touch layer xforms, fitScale,
-  // or anything that feeds the exports.
+  // These only affect how the shape is displayed inside the (fixed-size, never
+  // transformed) checkered artboard — a CSS transform on #stage itself, with
+  // transform-origin pinned to 0 0 so panX/panY are plain real-screen-px offsets
+  // regardless of zoom level. They never touch layer xforms, fitScale, or
+  // anything that feeds the exports.
   function applyStageTransform(){
-    const parts = [];
-    if (panX || panY) parts.push(`translate(${panX}px, ${panY}px)`);
-    if (viewZoom !== 1) parts.push(`scale(${viewZoom})`);
-    stageZoomWrap.style.transform = parts.join(" ");
+    stage.style.transformOrigin = "0 0";
+    stage.style.transform = `translate(${panX}px, ${panY}px) scale(${viewZoom})`;
     viewZoomLabel.textContent = Math.round(viewZoom * 100) + "%";
     updateHandles();
   }
 
-  function setViewZoom(next){
-    viewZoom = Math.min(VIEW_ZOOM_MAX, Math.max(VIEW_ZOOM_MIN, next));
+  // zooms by `factor`, keeping the point at (px, py) — in stageContainer-local
+  // real px — visually fixed, so scrolling zooms toward the cursor.
+  function zoomViewAt(px, py, factor){
+    const newZoom = Math.min(VIEW_ZOOM_MAX, Math.max(VIEW_ZOOM_MIN, viewZoom * factor));
+    const actualFactor = newZoom / viewZoom;
+    panX = px - (px - panX) * actualFactor;
+    panY = py - (py - panY) * actualFactor;
+    viewZoom = newZoom;
     applyStageTransform();
   }
 
-  function resetView(){
-    viewZoom = 1;
-    panX = 0; panY = 0;
-    applyStageTransform();
+  // sets the starting zoom so a freshly-loaded shape renders at a quarter of the
+  // browser window's height, leaving the rest of the checkered artboard visible
+  // around it, rather than filling the whole box.
+  function setInitialView(){
+    viewZoom = 1; panX = 0; panY = 0;
+    if (!bg){ applyStageTransform(); return; }
+    const rect = stageContainer.getBoundingClientRect();
+    if (!rect.width || !rect.height){ applyStageTransform(); return; }
+    const fitScale = Math.min(rect.width / bg.w, rect.height / bg.h);
+    const renderedH = bg.h * fitScale;
+    if (renderedH <= 0){ applyStageTransform(); return; }
+    const targetH = window.innerHeight * 0.25;
+    zoomViewAt(rect.width / 2, rect.height / 2, targetH / renderedH);
   }
 
-  // plain scroll = zoom, works over the shape and the surrounding background
+  // plain scroll = zoom, works over the shape and the surrounding checkered artboard
   stageWrap.addEventListener("wheel", (e) => {
     if (e.shiftKey){
       // shift + scroll rotates the selected layer instead of zooming
@@ -2290,11 +2451,12 @@
       return;
     }
     e.preventDefault();
+    const rect = stageContainer.getBoundingClientRect();
     const factor = Math.pow(1.0015, -e.deltaY);
-    setViewZoom(viewZoom * factor);
+    zoomViewAt(e.clientX - rect.left, e.clientY - rect.top, factor);
   }, { passive:false });
 
-  stageWrap.addEventListener("dblclick", () => resetView());
+  stageWrap.addEventListener("dblclick", () => setInitialView());
 
   // middle-mouse-button drag = pan the workspace, works over the shape and
   // the surrounding background
@@ -2477,115 +2639,148 @@
     return rasterizeSvgToBlobAsync(outSvg, canvasW, canvasH, { background:null, mime:"image/png" });
   }
 
-  function sanitizeFilename(name){
-    return (name || "image").replace(/[\\/:*?"<>|]+/g, "_");
+  function dataURLtoBlob(dataURL){
+    const [header, base64] = dataURL.split(",");
+    const mime = (header.match(/data:(.*?);base64/) || [])[1] || "application/octet-stream";
+    const bin = atob(base64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new Blob([bytes], { type: mime });
   }
 
-  // ---- zip: minimal STORE/DEFLATE writer (no external library) ----
-  const CRC_TABLE = (() => {
-    const table = new Uint32Array(256);
-    for (let n = 0; n < 256; n++){
-      let c = n;
-      for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
-      table[n] = c >>> 0;
+  function extFromMime(mime){
+    if (mime === "image/jpeg") return "jpg";
+    if (mime === "image/png") return "png";
+    if (mime === "image/webp") return "webp";
+    if (mime === "image/gif") return "gif";
+    return "bin";
+  }
+
+  function uniqueZipName(usedNames, name){
+    if (!usedNames.has(name)){
+      usedNames.add(name);
+      return name;
     }
-    return table;
-  })();
-
-  function crc32(bytes){
-    let crc = 0xFFFFFFFF;
-    for (let i = 0; i < bytes.length; i++) crc = CRC_TABLE[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
-    return (crc ^ 0xFFFFFFFF) >>> 0;
+    const dot = name.lastIndexOf(".");
+    const base = dot === -1 ? name : name.slice(0, dot);
+    const ext = dot === -1 ? "" : name.slice(dot);
+    let n = 2, candidate;
+    do{
+      candidate = `${base} (${n})${ext}`;
+      n++;
+    }while(usedNames.has(candidate));
+    usedNames.add(candidate);
+    return candidate;
   }
 
-  // Real (deflate) compression via the browser's built-in CompressionStream,
-  // so the zip doesn't need a bundled deflate implementation. Falls back to
-  // null (caller stores the entry uncompressed) on browsers without it.
-  async function deflateRaw(bytes){
-    if (typeof CompressionStream === "undefined") return null;
-    const cs = new CompressionStream("deflate-raw");
-    const writer = cs.writable.getWriter();
-    writer.write(bytes);
-    writer.close();
-    const compressed = await new Response(cs.readable).arrayBuffer();
-    return new Uint8Array(compressed);
-  }
-
-  function dosDateTime(date){
-    const dosTime = ((date.getHours() & 0x1f) << 11) | ((date.getMinutes() & 0x3f) << 5) | ((date.getSeconds() >> 1) & 0x1f);
-    const dosDate = (((date.getFullYear()-1980) & 0x7f) << 9) | (((date.getMonth()+1) & 0xf) << 5) | (date.getDate() & 0x1f);
-    return { dosTime, dosDate };
-  }
-
-  // files: [{ name, blob }] — builds a standard zip, deflating each entry at
-  // the browser's default (high) compression level when available.
-  async function buildZipBlob(files){
-    const encoder = new TextEncoder();
-    const { dosTime, dosDate } = dosDateTime(new Date());
-    const localParts = [];
-    const centralParts = [];
-    let offset = 0;
-
-    for (const file of files){
-      const rawBuf = new Uint8Array(await file.blob.arrayBuffer());
-      const crc = crc32(rawBuf);
-      const deflated = await deflateRaw(rawBuf);
-      const useDeflate = deflated && deflated.length < rawBuf.length;
-      const method = useDeflate ? 8 : 0;
-      const data = useDeflate ? deflated : rawBuf;
-      const nameBytes = encoder.encode(file.name);
-
-      const localHeader = new DataView(new ArrayBuffer(30));
-      localHeader.setUint32(0, 0x04034b50, true);
-      localHeader.setUint16(4, 20, true);
-      localHeader.setUint16(6, 0x0800, true);
-      localHeader.setUint16(8, method, true);
-      localHeader.setUint16(10, dosTime, true);
-      localHeader.setUint16(12, dosDate, true);
-      localHeader.setUint32(14, crc, true);
-      localHeader.setUint32(18, data.length, true);
-      localHeader.setUint32(22, rawBuf.length, true);
-      localHeader.setUint16(26, nameBytes.length, true);
-      localHeader.setUint16(28, 0, true);
-      localParts.push(new Uint8Array(localHeader.buffer), nameBytes, data);
-
-      const centralHeader = new DataView(new ArrayBuffer(46));
-      centralHeader.setUint32(0, 0x02014b50, true);
-      centralHeader.setUint16(4, 20, true);
-      centralHeader.setUint16(6, 20, true);
-      centralHeader.setUint16(8, 0x0800, true);
-      centralHeader.setUint16(10, method, true);
-      centralHeader.setUint16(12, dosTime, true);
-      centralHeader.setUint16(14, dosDate, true);
-      centralHeader.setUint32(16, crc, true);
-      centralHeader.setUint32(20, data.length, true);
-      centralHeader.setUint32(24, rawBuf.length, true);
-      centralHeader.setUint16(28, nameBytes.length, true);
-      centralHeader.setUint16(30, 0, true);
-      centralHeader.setUint16(32, 0, true);
-      centralHeader.setUint16(34, 0, true);
-      centralHeader.setUint16(36, 0, true);
-      centralHeader.setUint32(38, 0, true);
-      centralHeader.setUint32(42, offset, true);
-      centralParts.push(new Uint8Array(centralHeader.buffer), nameBytes);
-
-      offset += 30 + nameBytes.length + data.length;
+  // ---- export: standalone PNG "asset" for a single text/shape layer (analogous to the ----
+  // ---- original file kept for an image layer), rendered unrotated/unscaled/full-opacity ----
+  // ---- at its own naturalW x naturalH so it reads as a clean, reusable asset.           ----
+  function buildSingleLayerPNGBlob(layer){
+    const outSvg = document.createElementNS(NS, "svg");
+    outSvg.setAttribute("xmlns", NS);
+    outSvg.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", XLINK);
+    const hw = layer.naturalW/2, hh = layer.naturalH/2;
+    outSvg.setAttribute("viewBox", `${-hw} ${-hh} ${layer.naturalW} ${layer.naturalH}`);
+    outSvg.setAttribute("width", layer.naturalW);
+    outSvg.setAttribute("height", layer.naturalH);
+    const fontStyle = buildFontFaceDefsStyle();
+    if (fontStyle){
+      const defs = document.createElementNS(NS, "defs");
+      defs.appendChild(fontStyle);
+      outSvg.appendChild(defs);
     }
-
-    const centralStart = offset;
-    const centralSize = centralParts.reduce((sum, p) => sum + p.length, 0);
-
-    const eocd = new DataView(new ArrayBuffer(22));
-    eocd.setUint32(0, 0x06054b50, true);
-    eocd.setUint16(8, files.length, true);
-    eocd.setUint16(10, files.length, true);
-    eocd.setUint32(12, centralSize, true);
-    eocd.setUint32(16, centralStart, true);
-
-    return new Blob([...localParts, ...centralParts, new Uint8Array(eocd.buffer)], { type:"application/zip" });
+    outSvg.appendChild(buildLayerVisual(Object.assign({}, layer, { opacity: 100 })));
+    const longSide = Math.max(layer.naturalW, layer.naturalH, 1);
+    const exportScale = Math.max(1, Math.min(6, Math.round(1600 / longSide)));
+    const canvasW = Math.max(1, Math.round(layer.naturalW * exportScale));
+    const canvasH = Math.max(1, Math.round(layer.naturalH * exportScale));
+    return rasterizeSvgToBlobAsync(outSvg, canvasW, canvasH, { background:null, mime:"image/png" });
   }
 
-  // ---- export: zip of original images + JPG mockup + full-layers PNG ----
+  function layerAssetBaseName(layer){
+    if (layer.type === "image") return layer.name || `image-${layer.id}`;
+    if (layer.type === "text"){
+      const words = (layer.text || "").trim().replace(/\s+/g, " ").split(" ").slice(0, 5).join(" ");
+      return `Text - ${words || "text"}`;
+    }
+    if (layer.type === "shape") return `Shape - ${layer.shapeKind}`;
+    return `layer-${layer.id}`;
+  }
+
+  // ---- export: project.xml — position/size/rotation/stacking data for every layer, plus ----
+  // ---- which background shape (and rotation) was used, so the zip can be re-loaded exactly. ----
+  function buildProjectXML(assetFilenames, fontFilesMap){
+    const doc = document.implementation.createDocument(null, "railCustomizerProject", null);
+    const root = doc.documentElement;
+    root.setAttribute("version", "1");
+    root.setAttribute("exportedAt", new Date().toISOString());
+
+    const bgEl = doc.createElement("background");
+    bgEl.setAttribute("shape", currentShapeKey);
+    bgEl.setAttribute("label", currentShapeLabel || "");
+    bgEl.setAttribute("rotations", String(currentShapeRotations));
+    root.appendChild(bgEl);
+
+    const layersEl = doc.createElement("layers");
+    layers.forEach((layer, i) => {
+      const el = doc.createElement("layer");
+      el.setAttribute("index", String(i));
+      el.setAttribute("type", layer.type);
+      el.setAttribute("cx", String(layer.xform.cx));
+      el.setAttribute("cy", String(layer.xform.cy));
+      el.setAttribute("scale", String(layer.xform.scale));
+      el.setAttribute("rotation", String(layer.xform.rot));
+      el.setAttribute("opacity", String(layer.opacity == null ? 100 : layer.opacity));
+      el.setAttribute("naturalWidth", String(layer.naturalW));
+      el.setAttribute("naturalHeight", String(layer.naturalH));
+      const fname = assetFilenames.get(layer.id);
+      if (fname) el.setAttribute("file", "original-images/" + fname);
+
+      if (layer.type === "image"){
+        el.setAttribute("name", layer.name || "");
+        if (layer.origNaturalW != null){
+          el.setAttribute("origNaturalWidth", String(layer.origNaturalW));
+          el.setAttribute("origNaturalHeight", String(layer.origNaturalH));
+        }
+      } else if (layer.type === "shape"){
+        el.setAttribute("shapeKind", layer.shapeKind);
+        el.setAttribute("filled", String(!!layer.filled));
+        el.setAttribute("strokeWidth", String(layer.strokeWidth));
+        el.setAttribute("colorC", String(layer.color.c));
+        el.setAttribute("colorM", String(layer.color.m));
+        el.setAttribute("colorY", String(layer.color.y));
+        el.setAttribute("colorK", String(layer.color.k));
+      } else if (layer.type === "text"){
+        el.setAttribute("colorC", String(layer.color.c));
+        el.setAttribute("colorM", String(layer.color.m));
+        el.setAttribute("colorY", String(layer.color.y));
+        el.setAttribute("colorK", String(layer.color.k));
+        const isBuiltin = BUILTIN_FONTS.some((f) => f.value === layer.fontFamily);
+        if (isBuiltin){
+          el.setAttribute("fontSource", "builtin");
+          el.setAttribute("fontFamily", layer.fontFamily);
+        } else {
+          el.setAttribute("fontSource", "custom");
+          const info = fontFilesMap.get(layer.fontFamily);
+          if (info){
+            el.setAttribute("fontFile", "fonts/" + info.filename);
+            el.setAttribute("fontLabel", info.label);
+          }
+        }
+        const contentEl = doc.createElement("content");
+        contentEl.appendChild(doc.createCDATASection(layer.text || ""));
+        el.appendChild(contentEl);
+      }
+      layersEl.appendChild(el);
+    });
+    root.appendChild(layersEl);
+
+    return '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(doc);
+  }
+
+  // ---- export: zip containing the JPG mockup, full-layers PNG, a PNG of each individual ----
+  // ---- layer, project.xml (position/size/stacking + background shape), and originals    ----
   async function exportZip(){
     if (!layers.length || !bg){
       alert("Add at least one image layer first.");
@@ -2606,20 +2801,59 @@
       });
       await Promise.all(Array.from(neededFamilies).map(ensureGoogleFontEmbedded));
 
-      const files = [];
-      const imageLayers = layers.filter((l) => l.type === "image");
-      for (let i = 0; i < imageLayers.length; i++){
-        const layer = imageLayers[i];
-        const blob = await fetch(layer.dataURL).then((r) => r.blob());
-        files.push({ name: `original-images/${i+1}-${sanitizeFilename(layer.name)}`, blob });
-      }
       const [jpgBlob, pngBlob] = await Promise.all([buildMockupJpgBlob(), buildFullLayersPngBlob()]);
-      files.push({ name: buildExportFilename("jpg"), blob: jpgBlob });
-      files.push({ name: buildExportFilename("png", "full-layers"), blob: pngBlob });
 
-      const zipBlob = await buildZipBlob(files);
+      const zip = new JSZip();
+      zip.file(buildExportFilename("jpg"), jpgBlob);
+      zip.file(buildExportFilename("png", "full-layers"), pngBlob);
+
+      const originalsFolder = zip.folder("original-images");
+      const usedNames = new Set();
+      const assetFilenames = new Map(); // layer.id -> filename inside original-images/
+
+      for (const layer of layers){
+        if (layer.type !== "image") continue;
+        const blob = await fetch(layer.dataURL).then((r) => r.blob());
+        let name = layer.name || `layer.${extFromMime(blob.type)}`;
+        if (!/\.[a-z0-9]+$/i.test(name)) name += `.${extFromMime(blob.type)}`;
+        name = uniqueZipName(usedNames, name);
+        originalsFolder.file(name, blob);
+        assetFilenames.set(layer.id, name);
+      }
+
+      const nonImageLayers = layers.filter((l) => l.type !== "image");
+      for (const layer of nonImageLayers){
+        const blob = await buildSingleLayerPNGBlob(layer);
+        const name = uniqueZipName(usedNames, layerAssetBaseName(layer) + ".png");
+        originalsFolder.file(name, blob);
+        assetFilenames.set(layer.id, name);
+      }
+
+      // custom (uploaded, non-Google) fonts actually used by a text layer
+      const fontFilesMap = new Map(); // familyName -> { filename, label }
+      const usedFontNames = new Set();
+      let fontsFolder = null;
+      layers.forEach((layer) => {
+        if (layer.type !== "text") return;
+        const isBuiltin = BUILTIN_FONTS.some((f) => f.value === layer.fontFamily);
+        if (isBuiltin || fontFilesMap.has(layer.fontFamily)) return;
+        const faces = customFonts[layer.fontFamily];
+        if (!faces || !faces.length) return;
+        if (!fontsFolder) fontsFolder = zip.folder("fonts");
+        const label = customFontLabels[layer.fontFamily] || layer.fontFamily;
+        const blob = dataURLtoBlob(faces[0].dataURL);
+        const ext = /otf/i.test(blob.type) ? "otf" : "ttf";
+        const filename = uniqueZipName(usedFontNames, layer.fontFamily.replace(/[^a-z0-9-]+/gi, "_") + "." + ext);
+        fontsFolder.file(filename, blob);
+        fontFilesMap.set(layer.fontFamily, { filename, label });
+      });
+
+      zip.file("project.xml", buildProjectXML(assetFilenames, fontFilesMap));
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
       triggerDownload(zipBlob, buildExportFilename("zip"));
     }catch(e){
+      console.error(e);
       alert((e && e.message) ? e.message : "Export failed. Try different photos.");
     }finally{
       downloadZipBtn.disabled = layers.length === 0;
@@ -2628,6 +2862,208 @@
   }
 
   downloadZipBtn.addEventListener("click", exportZip);
+
+  // ---- import: re-create the editor from a previously exported project zip ----
+  function mimeFromExt(path){
+    const ext = (path.split(".").pop() || "").toLowerCase();
+    const map = { png:"image/png", jpg:"image/jpeg", jpeg:"image/jpeg", gif:"image/gif", webp:"image/webp", svg:"image/svg+xml", ttf:"font/ttf", otf:"font/otf" };
+    return map[ext] || "application/octet-stream";
+  }
+
+  function zipFileToDataURL(zip, path){
+    const entry = path && zip.file(path);
+    if (!entry) return Promise.resolve(null);
+    return entry.async("base64").then((b64) => `data:${mimeFromExt(path)};base64,${b64}`);
+  }
+
+  // builds one layer object (without a runtime id) from a <layer> element of project.xml,
+  // resolving any referenced asset (image data / custom font file) out of the zip first.
+  function buildLayerFromXML(el, zip, fontImportCache){
+    const type = el.getAttribute("type");
+    const xform = {
+      cx: parseFloat(el.getAttribute("cx")) || 0,
+      cy: parseFloat(el.getAttribute("cy")) || 0,
+      scale: parseFloat(el.getAttribute("scale")) || 1,
+      rot: parseFloat(el.getAttribute("rotation")) || 0
+    };
+    const opacity = el.hasAttribute("opacity") ? parseFloat(el.getAttribute("opacity")) : 100;
+    const naturalW = parseFloat(el.getAttribute("naturalWidth")) || 10;
+    const naturalH = parseFloat(el.getAttribute("naturalHeight")) || 10;
+
+    if (type === "image"){
+      return zipFileToDataURL(zip, el.getAttribute("file")).then((dataURL) => {
+        if (!dataURL) return null;
+        const origW = el.hasAttribute("origNaturalWidth") ? parseFloat(el.getAttribute("origNaturalWidth")) : naturalW;
+        const origH = el.hasAttribute("origNaturalHeight") ? parseFloat(el.getAttribute("origNaturalHeight")) : naturalH;
+        return {
+          type: "image",
+          name: el.getAttribute("name") || "image.png",
+          naturalW, naturalH,
+          origNaturalW: origW, origNaturalH: origH,
+          dataURL,
+          opacity,
+          xform,
+          fitScale: 1
+        };
+      });
+    }
+
+    const c = parseFloat(el.getAttribute("colorC")) || 0;
+    const m = parseFloat(el.getAttribute("colorM")) || 0;
+    const y = parseFloat(el.getAttribute("colorY")) || 0;
+    const k = el.hasAttribute("colorK") ? parseFloat(el.getAttribute("colorK")) : 100;
+    const color = { c, m, y, k };
+    const fillColor = cmykToHex(c, m, y, k);
+
+    if (type === "shape"){
+      return Promise.resolve({
+        type: "shape",
+        shapeKind: el.getAttribute("shapeKind") || "rectangle",
+        filled: el.getAttribute("filled") !== "false",
+        strokeWidth: parseFloat(el.getAttribute("strokeWidth")) || 6,
+        color, fillColor,
+        opacity,
+        naturalW, naturalH,
+        xform,
+        fitScale: 1
+      });
+    }
+
+    if (type === "text"){
+      const contentEl = el.querySelector("content");
+      const layer = {
+        type: "text",
+        text: contentEl ? contentEl.textContent : "",
+        color, fillColor,
+        opacity,
+        xform,
+        fitScale: 1
+      };
+      const fontFile = el.getAttribute("fontFile");
+      if (el.getAttribute("fontSource") === "custom" && fontFile){
+        let p = fontImportCache.get(fontFile);
+        if (!p){
+          p = zipFileToDataURL(zip, fontFile).then((dataURL) => new Promise((resolve) => {
+            if (!dataURL){ resolve(BUILTIN_FONTS[0].value); return; }
+            const label = el.getAttribute("fontLabel") || "Custom font";
+            const familyName = "UserFont" + (++customFontCounter) + "-" + label.replace(/[^a-z0-9]+/gi, "").slice(0, 24);
+            registerCustomFont(familyName, dataURL);
+            addCustomFontOption(familyName, label);
+            loadFontAndThen(familyName, () => resolve(familyName));
+          }));
+          fontImportCache.set(fontFile, p);
+        }
+        return p.then((familyName) => {
+          layer.fontFamily = familyName;
+          measureTextLayer(layer);
+          return layer;
+        });
+      }
+      layer.fontFamily = el.getAttribute("fontFamily") || BUILTIN_FONTS[0].value;
+      measureTextLayer(layer);
+      return Promise.resolve(layer);
+    }
+
+    return Promise.resolve(null);
+  }
+
+  function applyImportedProject(shapeValue, rotations, newLayers){
+    const key = BUILTIN_SHAPES[shapeValue] ? shapeValue : "rail2";
+    const shape = BUILTIN_SHAPES[key];
+    currentShapeKey = key;
+    currentShapeLabel = shape.label;
+    shapeSelect.value = key;
+
+    currentShapeRotations = ((rotations || 0) % 4 + 4) % 4;
+    let svgText = shape.svg;
+    for (let i = 0; i < currentShapeRotations; i++) svgText = rotateSvgText90(svgText);
+    parseAndLoadBackground(svgText);
+
+    layers = newLayers.map((l) => {
+      l.id = ++layerIdCounter;
+      if (bg) l.fitScale = Math.max(bg.coverageBBoxRect.w/l.naturalW, bg.coverageBBoxRect.h/l.naturalH) || 1;
+      return l;
+    });
+    selectedLayerId = layers.length ? layers[layers.length - 1].id : null;
+
+    renderLayerList();
+    buildStage();
+    syncZoomSlider();
+    syncRotationSlider();
+    updateControlsEnabled();
+    syncTextControls();
+  }
+
+  function importProjectZip(file){
+    if (!file) return;
+    if (layers.length && !confirm("Loading this project will replace your current layers. Continue?")) return;
+    projectZipDropzone.classList.add("dragover");
+    JSZip.loadAsync(file).then((zip) => {
+      const xmlEntry = zip.file("project.xml");
+      if (!xmlEntry) throw new Error("This zip doesn't contain a project.xml — it doesn't look like a Rail Customizer export.");
+      return xmlEntry.async("string").then((xmlText) => {
+        const doc = new DOMParser().parseFromString(xmlText, "application/xml");
+        if (doc.querySelector("parsererror")) throw new Error("Couldn't parse project.xml in that zip.");
+        const root = doc.documentElement;
+        const bgEl = root.querySelector("background");
+        const shapeValue = bgEl ? bgEl.getAttribute("shape") : null;
+        const rotations = bgEl ? (parseInt(bgEl.getAttribute("rotations"), 10) || 0) : 0;
+        const layerEls = Array.from(root.querySelectorAll("layers > layer"));
+        const fontImportCache = new Map();
+        return Promise.all(layerEls.map((el) => buildLayerFromXML(el, zip, fontImportCache)))
+          .then((newLayers) => ({ shapeValue, rotations, newLayers: newLayers.filter(Boolean) }));
+      });
+    }).then(({ shapeValue, rotations, newLayers }) => {
+      applyImportedProject(shapeValue, rotations, newLayers);
+    }).catch((err) => {
+      console.error(err);
+      alert("Couldn't load that project zip. " + (err && err.message ? err.message : ""));
+    }).then(() => {
+      projectZipDropzone.classList.remove("dragover");
+    });
+  }
+
+  projectZipInput.addEventListener("change", (e) => {
+    const file = e.target.files && e.target.files[0];
+    importProjectZip(file);
+    projectZipInput.value = "";
+  });
+
+  projectZipDropzone.addEventListener("click", () => projectZipInput.click());
+  projectZipDropzone.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " "){
+      e.preventDefault();
+      projectZipInput.click();
+    }
+  });
+  ["dragenter","dragover"].forEach((evt) => {
+    projectZipDropzone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      projectZipDropzone.classList.add("dragover");
+    });
+  });
+  ["dragleave","dragend"].forEach((evt) => {
+    projectZipDropzone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      projectZipDropzone.classList.remove("dragover");
+    });
+  });
+  projectZipDropzone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    projectZipDropzone.classList.remove("dragover");
+    const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    importProjectZip(file);
+  });
+  // prevent the browser from navigating away if a file is dropped outside a dropzone
+  ["dragover","drop"].forEach((evt) => {
+    window.addEventListener(evt, (e) => {
+      const inDropzone = dropzone.contains(e.target) || projectZipDropzone.contains(e.target);
+      if (!inDropzone) e.preventDefault();
+    });
+  });
 
   // ---- init ----
   BUILTIN_FONTS.forEach((f) => {
